@@ -21,6 +21,8 @@ const COLUMNS = `
   customer_name, customer_email, customer_phone, created_at`;
 
 const UNIQUE_VIOLATION = "23505";
+/** Raised by the no-overlap constraint in migration 003. */
+const EXCLUSION_VIOLATION = "23P01";
 
 const toBooking = (row: BookingRow): Booking => ({
   id: row.id,
@@ -70,7 +72,8 @@ export class PgBookingRepository implements BookingRepository {
       );
       return toBooking(rows[0]!);
     } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === UNIQUE_VIOLATION) {
+      const code = typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
+      if (code === UNIQUE_VIOLATION || code === EXCLUSION_VIOLATION) {
         throw new AppError(409, "That time is no longer available");
       }
       throw error;

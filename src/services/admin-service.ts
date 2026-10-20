@@ -48,6 +48,18 @@ export class AdminService {
     return this.professionals.create(tenant.id, input);
   }
 
+  async archiveService(tenant: Tenant, id: number): Promise<void> {
+    if (!(await this.services.archive(tenant.id, id))) {
+      throw new AppError(404, "Service not found");
+    }
+  }
+
+  async archiveProfessional(tenant: Tenant, id: number): Promise<void> {
+    if (!(await this.professionals.archive(tenant.id, id))) {
+      throw new AppError(404, "Professional not found");
+    }
+  }
+
   async updateService(tenant: Tenant, id: number, patch: ServicePatch): Promise<Service> {
     const service = await this.services.update(tenant.id, id, patch);
     if (!service) {

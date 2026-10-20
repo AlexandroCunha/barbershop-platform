@@ -1,6 +1,6 @@
+import { AppError } from "../utils/app-error.js";
 import type { DbPool } from "../db/pool.js";
 import type { Professional, ProfessionalPatch } from "../domain/types.js";
-import { AppError } from "../utils/app-error.js";
 import type { NewProfessional, ProfessionalRepository } from "./types.js";
 
 interface ProfessionalRow {
@@ -12,6 +12,7 @@ interface ProfessionalRow {
 }
 
 const COLUMNS = "id, name, specialties, bio, photo";
+const UNIQUE_VIOLATION = "23505";
 
 const toProfessional = (row: ProfessionalRow): Professional => ({
   id: row.id,
@@ -26,7 +27,7 @@ export class PgProfessionalRepository implements ProfessionalRepository {
 
   async findAll(tenantId: number): Promise<Professional[]> {
     const { rows } = await this.db.query<ProfessionalRow>(
-      `SELECT ${COLUMNS} FROM professionals WHERE tenant_id = $1 ORDER BY id`,
+      `SELECT ${COLUMNS} FROM professionals WHERE tenant_id = $1 AND archived_at IS NULL ORDER BY id`,
       [tenantId],
     );
     return rows.map(toProfessional);
@@ -34,7 +35,7 @@ export class PgProfessionalRepository implements ProfessionalRepository {
 
   async findById(tenantId: number, id: number): Promise<Professional | null> {
     const { rows } = await this.db.query<ProfessionalRow>(
-      `SELECT ${COLUMNS} FROM professionals WHERE tenant_id = $1 AND id = $2`,
+      `SELECT ${COLUMNS} FROM professionals WHERE tenant_id = $1 AND id = $2 AND archived_at IS NULL`,
       [tenantId, id],
     );
     return rows[0] ? toProfessional(rows[0]) : null;
@@ -50,7 +51,7 @@ export class PgProfessionalRepository implements ProfessionalRepository {
       );
       return toProfessional(rows[0]!);
     } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      if (typeof error === "object" && error !== null && "code" in error && error.code === UNIQUE_VIOLATION) {
         throw new AppError(409, "A barber with this name already exists");
       }
       throw error;
@@ -66,7 +67,7 @@ export class PgProfessionalRepository implements ProfessionalRepository {
          specialties = COALESCE($4, specialties),
          bio = COALESCE($5, bio),
          photo = CASE WHEN $6 THEN $7 ELSE photo END
-       WHERE tenant_id = $1 AND id = $2
+       WHERE tenant_id = $1 AND id = $2 AND archived_at IS NULL
        RETURNING ${COLUMNS}`,
       [
         tenantId,
@@ -79,5 +80,13 @@ export class PgProfessionalRepository implements ProfessionalRepository {
       ],
     );
     return rows[0] ? toProfessional(rows[0]) : null;
+  }
+
+  async archive(tenantId: number, id: number): Promise<boolean> {
+    const result = await this.db.query(
+      "UPDATE professionals SET archived_at = now() WHERE tenant_id = $1 AND id = $2 AND archived_at IS NULL",
+      [tenantId, id],
+    );
+    return (result.rowCount ?? 0) > 0;
   }
 }

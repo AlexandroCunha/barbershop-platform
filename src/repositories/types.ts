@@ -62,6 +62,8 @@ export interface NewProfessional {
 export interface ServiceRepository {
   findAll(tenantId: number): Promise<Service[]>;
   findById(tenantId: number, id: number): Promise<Service | null>;
+  /** Hides the service from customers and the owner. Existing bookings keep it. */
+  archive(tenantId: number, id: number): Promise<boolean>;
   create(tenantId: number, input: NewService): Promise<Service>;
   update(tenantId: number, id: number, patch: ServicePatch): Promise<Service | null>;
 }
@@ -69,6 +71,8 @@ export interface ServiceRepository {
 export interface ProfessionalRepository {
   findAll(tenantId: number): Promise<Professional[]>;
   findById(tenantId: number, id: number): Promise<Professional | null>;
+  /** Stops the barber taking new bookings. Existing bookings keep them. */
+  archive(tenantId: number, id: number): Promise<boolean>;
   create(tenantId: number, input: NewProfessional): Promise<Professional>;
   update(tenantId: number, id: number, patch: ProfessionalPatch): Promise<Professional | null>;
 }

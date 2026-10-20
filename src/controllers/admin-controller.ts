@@ -50,6 +50,16 @@ export class AdminController {
     res.status(201).json(await this.service.createProfessional(tenantOf(req), parseNewProfessional(req.body)));
   };
 
+  archiveService = async (req: Request, res: Response): Promise<void> => {
+    await this.service.archiveService(tenantOf(req), parseServiceId(String(req.params.id)));
+    res.status(204).end();
+  };
+
+  archiveProfessional = async (req: Request, res: Response): Promise<void> => {
+    await this.service.archiveProfessional(tenantOf(req), parseProfessionalId(String(req.params.id)));
+    res.status(204).end();
+  };
+
   updateService = async (req: Request, res: Response): Promise<void> => {
     const id = parseServiceId(String(req.params.id));
     res.json(await this.service.updateService(tenantOf(req), id, parseServicePatch(req.body)));

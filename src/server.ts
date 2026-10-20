@@ -74,7 +74,7 @@ const app = createApp(
     }),
     bookingLimit: rateLimit({
       windowMs: 10 * MINUTE,
-      max: 30,
+      max: config.bookingRateLimit,
       message: "Too many booking attempts. Please wait a few minutes and try again.",
     }),
   },

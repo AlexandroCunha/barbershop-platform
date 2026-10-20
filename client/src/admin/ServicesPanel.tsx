@@ -33,6 +33,7 @@ export function ServicesPanel() {
           onSaved={(saved) =>
             setServices((current) => current?.map((item) => (item.id === saved.id ? saved : item)) ?? null)
           }
+          onRemoved={(id) => setServices((current) => current?.filter((item) => item.id !== id) ?? null)}
         />
       ))}
     </div>
@@ -43,10 +44,12 @@ function ServiceCard({
   service,
   currency,
   onSaved,
+  onRemoved,
 }: {
   service: Service;
   currency: string;
   onSaved: (saved: Service) => void;
+  onRemoved: (id: number) => void;
 }) {
   const { api } = useTenant();
   const [name, setName] = useState(service.name);
@@ -55,6 +58,16 @@ function ServiceCard({
   const [duration, setDuration] = useState(String(service.durationMinutes));
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
+  async function remove() {
+    if (!window.confirm(`Remove ${service.name}? Past bookings keep it.`)) return;
+    try {
+      await api.owner.archiveService(service.id);
+      onRemoved(service.id);
+    } catch (caught) {
+      setResult({ kind: "error", text: errorText(caught) });
+    }
+  }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -123,6 +136,9 @@ function ServiceCard({
 
       {result && <Notice kind={result.kind}>{result.text}</Notice>}
       <div className="owner-savebar">
+        <button type="button" className="btn btn-ghost" onClick={remove}>
+          Remove service
+        </button>
         <button type="submit" className="btn btn-dark" disabled={saving || !name.trim()}>
           {saving ? "Saving…" : "Save service"}
         </button>

@@ -54,6 +54,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
   owner.post("/media", express.raw({ type: MEDIA_CONTENT_TYPES, limit: "8mb" }), deps.admin.uploadMedia);
   owner.post("/services", deps.admin.createService);
   owner.post("/professionals", deps.admin.createProfessional);
+  owner.delete("/services/:id", deps.admin.archiveService);
+  owner.delete("/professionals/:id", deps.admin.archiveProfessional);
   owner.patch("/services/:id", deps.admin.updateService);
   owner.patch("/professionals/:id", deps.admin.updateProfessional);
   shop.use("/owner", owner);

@@ -98,6 +98,11 @@ export function tenantApi(slug: string) {
   createProfessional: (input: { name: string; specialties: string[]; bio: string }) =>
     ownerSend<Professional>(`${owner}/professionals`, json("POST", input), "professionals"),
 
+  archiveService: (id: number) => ownerSend<unknown>(`${owner}/services/${id}`, { method: "DELETE" }, "services"),
+
+  archiveProfessional: (id: number) =>
+    ownerSend<unknown>(`${owner}/professionals/${id}`, { method: "DELETE" }, "professionals"),
+
   updateService: (id: number, patch: Partial<Omit<Service, "id">>) =>
         ownerSend<Service>(`${owner}/services/${id}`, json("PATCH", patch), "services"),
 

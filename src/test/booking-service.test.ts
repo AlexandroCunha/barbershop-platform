@@ -51,6 +51,10 @@ class InMemoryServices implements ServiceRepository {
     throw new Error("not used by these tests");
   }
 
+  async archive(): Promise<boolean> {
+    throw new Error("not used by these tests");
+  }
+
   async update(): Promise<Service | null> {
     throw new Error("not used by these tests");
   }
@@ -68,6 +72,10 @@ class InMemoryProfessionals implements ProfessionalRepository {
   }
 
   async create(): Promise<Professional> {
+    throw new Error("not used by these tests");
+  }
+
+  async archive(): Promise<boolean> {
     throw new Error("not used by these tests");
   }
 

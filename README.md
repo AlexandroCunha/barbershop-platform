@@ -32,7 +32,7 @@ platform owner controls each shop's license from a separate area.
 **Barbershop owners** (`/<shop>/admin`)
 - Business profile: name, slogan, about, contact details, address, opening hours, time zone and currency.
 - Photos: upload JPG, PNG or WebP files, then choose a hero image and barber portraits.
-- Barbers and services: add, rename, set prices, durations and descriptions.
+- Barbers and services: add, rename, set prices and durations, and remove. Removed items keep their past bookings.
 - Account: change password (other sessions are signed out).
 - License notice: shows whether online booking is open and until when.
 
@@ -122,7 +122,7 @@ sequenceDiagram
   S->>L: is online booking allowed?
   L-->>S: trial / active (or 403)
   S->>R: free slots for each barber (opening hours, existing bookings)
-  S->>R: create booking (unique per barber and start time)
+  S->>R: create booking (the database rejects overlapping times for one barber)
   R-->>S: booking, or 409 if someone was faster
   S-->>A: booking
   A-->>C: 201 with date, time and reference
@@ -248,6 +248,7 @@ Until then the platform owner sets licenses by hand in `/platform`.
 
 ## Testing and CI
 
+- `npm run simulate` runs an end-to-end simulation with ten agents (one owner, three new barbers, six customers): concurrent bookings for the same slot, removals, overlaps, suspension and password changes. It needs the server running, with `BOOKING_RATE_LIMIT` raised (for example `BOOKING_RATE_LIMIT=500 npm start`), and `psql` on the PATH or set as `PSQL`.
 - `npm test` runs 53 unit tests: availability, booking rules across barbershops, license states,
   password hashing and signed tokens, rate limits, uploads, slugs and input validation.
 - A GitHub Actions workflow (`.github/workflows/ci.yml`) builds and tests every push and pull request.

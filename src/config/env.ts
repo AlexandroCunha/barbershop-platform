@@ -13,6 +13,17 @@ export interface Config {
   secureCookies: boolean;
   /** Trust X-Forwarded-For from a reverse proxy. */
   trustProxy: boolean;
+  /** Booking requests allowed per address in 10 minutes. Raise it for load tests only. */
+  bookingRateLimit: number;
+}
+
+function parseRateLimit(value: string | undefined, fallback: number): number {
+  if (value === undefined || value === "") return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error("BOOKING_RATE_LIMIT must be a positive whole number");
+  }
+  return parsed;
 }
 
 const isTrue = (value: string | undefined): boolean => value?.toLowerCase() === "true";
@@ -47,5 +58,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     platformToken,
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
     trustProxy: isTrue(env.TRUST_PROXY),
+    bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
   };
 }

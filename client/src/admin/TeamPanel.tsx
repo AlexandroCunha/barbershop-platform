@@ -36,6 +36,7 @@ export function TeamPanel() {
           onSaved={(saved) =>
             setPeople((current) => current?.map((item) => (item.id === saved.id ? saved : item)) ?? null)
           }
+          onRemoved={(id) => setPeople((current) => current?.filter((item) => item.id !== id) ?? null)}
         />
       ))}
     </div>
@@ -46,10 +47,12 @@ function BarberCard({
   person,
   media,
   onSaved,
+  onRemoved,
 }: {
   person: Professional;
   media: MediaItem[];
   onSaved: (saved: Professional) => void;
+  onRemoved: (id: number) => void;
 }) {
   const { api, slug } = useTenant();
   const [name, setName] = useState(person.name);
@@ -58,6 +61,16 @@ function BarberCard({
   const [photo, setPhoto] = useState(person.photo ?? "");
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
+  async function remove() {
+    if (!window.confirm(`Remove ${person.name}? Their past bookings are kept.`)) return;
+    try {
+      await api.owner.archiveProfessional(person.id);
+      onRemoved(person.id);
+    } catch (caught) {
+      setResult({ kind: "error", text: errorText(caught) });
+    }
+  }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -125,6 +138,9 @@ function BarberCard({
 
       {result && <Notice kind={result.kind}>{result.text}</Notice>}
       <div className="owner-savebar">
+        <button type="button" className="btn btn-ghost" onClick={remove}>
+          Remove barber
+        </button>
         <button type="submit" className="btn btn-dark" disabled={saving || !name.trim()}>
           {saving ? "Saving…" : `Save ${person.name.split(" ")[0] || "barber"}`}
         </button>
