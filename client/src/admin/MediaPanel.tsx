@@ -1,0 +1,84 @@
+import { useEffect, useState, type ChangeEvent } from "react";
+import { owner } from "../api";
+import type { MediaItem } from "../types";
+import { Notice, errorText } from "./ui";
+
+const MAX_BYTES = 8 * 1024 * 1024;
+const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
+
+type Result = { kind: "ok" | "error"; text: string };
+
+export function MediaPanel() {
+  const [items, setItems] = useState<MediaItem[] | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<Result | null>(null);
+
+  useEffect(() => {
+    owner
+      .listMedia()
+      .then(setItems)
+      .catch((caught: unknown) => setResult({ kind: "error", text: errorText(caught) }));
+  }, []);
+
+  async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!ACCEPTED.includes(file.type)) {
+      setResult({ kind: "error", text: "Choose a JPG, PNG or WebP image." });
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setResult({ kind: "error", text: "The photo is larger than 8 MB. Please resize it and try again." });
+      return;
+    }
+
+    setUploading(true);
+    setResult(null);
+    try {
+      const uploaded = await owner.uploadMedia(file);
+      setItems((current) => [...(current ?? []), uploaded].sort((a, b) => a.name.localeCompare(b.name)));
+      setResult({ kind: "ok", text: `Uploaded ${uploaded.name}.` });
+    } catch (caught) {
+      setResult({ kind: "error", text: errorText(caught) });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="owner-stack">
+      <section className="owner-card">
+        <h2>Add a photo</h2>
+        <p className="muted">
+          JPG, PNG or WebP, up to 8 MB. Landscape photos suit the hero; portraits (4:5) suit the barbers. The name
+          you see below is the file name the site uses.
+        </p>
+        <label className={`upload${uploading ? " is-busy" : ""}`}>
+          <input type="file" accept={ACCEPTED.join(",")} onChange={handleUpload} disabled={uploading} />
+          <span>{uploading ? "Uploading…" : "Choose a photo"}</span>
+        </label>
+        {result && <Notice kind={result.kind}>{result.text}</Notice>}
+      </section>
+
+      <section className="owner-card">
+        <h2>Your photos</h2>
+        {!items && <p className="status">Loading photos…</p>}
+        {items && items.length === 0 && (
+          <p className="muted">No photos yet. You can also copy files into the media folder on the server.</p>
+        )}
+        {items && items.length > 0 && (
+          <ul className="media-grid">
+            {items.map((item) => (
+              <li key={item.name}>
+                <img src={item.url} alt="" loading="lazy" />
+                <span className="media-name">{item.name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}

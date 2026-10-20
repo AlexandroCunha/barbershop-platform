@@ -1,0 +1,28 @@
+{
+  "name": "Your Barbershop",
+  "tagline": "",
+  "about": "",
+  "phone": "",
+  "whatsapp": "",
+  "email": "",
+  "address": {
+    "street": "",
+    "city": "",
+    "postcode": "",
+    "country": ""
+  },
+  "mapsUrl": "",
+  "instagram": "",
+  "hours": {
+    "sunday": null,
+    "monday": { "open": "09:00", "close": "19:00" },
+    "tuesday": { "open": "09:00", "close": "19:00" },
+    "wednesday": { "open": "09:00", "close": "19:00" },
+    "thursday": { "open": "09:00", "close": "19:00" },
+    "friday": { "open": "09:00", "close": "19:00" },
+    "saturday": { "open": "09:00", "close": "18:00" }
+  },
+  "heroImage": "",
+  "timeZone": "Europe/Dublin",
+  "currency": "EUR"
+}

@@ -1,0 +1,20 @@
+# Dependencies and build output
+node_modules
+dist
+dist-client
+
+# Secrets and local settings
+.env
+
+# The owner's business profile and photos are data, not source code.
+# The template content/business.example.json is what ships.
+content/business.json
+content/*.tmp
+media/*
+!media/.gitkeep
+!media/README.md
+
+# Editors and OS files
+.DS_Store
+.vscode
+.idea
