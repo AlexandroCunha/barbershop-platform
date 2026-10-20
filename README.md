@@ -33,6 +33,10 @@ a booking calendar and an owner area. One installation serves many shops.
   <img src="docs/carousel.svg" alt="Screenshot carousel: the website, booking, the owner area and the platform area, shown in turn" width="100%">
 </p>
 
+<p align="center">
+  <img src="docs/gallery.svg" alt="Gallery banner: all nine screenshots in a grid, with a caption on each" width="100%">
+</p>
+
 ---
 
 ## ✨ What you get

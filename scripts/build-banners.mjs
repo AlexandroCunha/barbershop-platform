@@ -1,6 +1,7 @@
 // Builds the README banners in English and Portuguese:
 //   docs/banner.svg, docs/banner.pt-BR.svg       the header hero
 //   docs/carousel.svg, docs/carousel.pt-BR.svg   the animated screenshot carousel
+//   docs/gallery.svg, docs/gallery.pt-BR.svg     the static grid of all nine screenshots
 //
 // Every banner uses the same 1000 x 640 canvas and the same type scale, so they line up when
 // GitHub shows them at full width. GitHub strips scripts from README images, so the carousel is
@@ -106,6 +107,11 @@ const COPY = {
     carouselEyebrow: "BARBEARIA · PREVIEW",
     carouselTitle: "Barbearia screenshots",
     carouselDesc: "Screenshots of the website, booking, owner area and platform area, shown in turn.",
+    galleryEyebrow: "GALLERY",
+    galleryHeading: "Nine screens, one shop",
+    galleryTitle: "Barbearia gallery",
+    galleryDesc: "All nine screenshots of the website, the booking flow, the owner area and the platform area.",
+    galleryNote: "All names, prices, addresses and phone numbers in the screenshots are invented for the demo.",
   },
   pt: {
     eyebrow: "AGENDAMENTO PARA BARBEARIAS",
@@ -117,6 +123,11 @@ const COPY = {
     carouselEyebrow: "BARBEARIA · PRÉVIA",
     carouselTitle: "Capturas de tela da Barbearia",
     carouselDesc: "Capturas do site, do agendamento, da área do dono e da área da plataforma, em sequência.",
+    galleryEyebrow: "GALERIA",
+    galleryHeading: "Nove telas, uma barbearia",
+    galleryTitle: "Galeria da Barbearia",
+    galleryDesc: "As nove capturas do site, do fluxo de agendamento, da área do dono e da área da plataforma.",
+    galleryNote: "Todos os nomes, preços, endereços e telefones das capturas são fictícios, criados para a demonstração.",
   },
 };
 
@@ -134,9 +145,9 @@ const svgOpen = (titleId, title, desc) => `<svg xmlns="http://www.w3.org/2000/sv
 
 const workDir = mkdtempSync(join(tmpdir(), "banners-"));
 
-function shotAsDataUri(file) {
-  const out = join(workDir, file.replace(/\.png$/, ".jpg"));
-  execFileSync("sips", ["-Z", "900", "-s", "format", "jpeg", "-s", "formatOptions", "80", join(SHOTS_DIR, file), "--out", out], {
+function shotAsDataUri(file, maxSize = 900) {
+  const out = join(workDir, `${maxSize}-${file.replace(/\.png$/, ".jpg")}`);
+  execFileSync("sips", ["-Z", String(maxSize), "-s", "format", "jpeg", "-s", "formatOptions", "80", join(SHOTS_DIR, file), "--out", out], {
     stdio: "ignore",
   });
   return `data:image/jpeg;base64,${readFileSync(out).toString("base64")}`;
@@ -219,11 +230,49 @@ function buildCarousel(lang) {
 `;
 }
 
+// A static 3 x 3 grid of every screenshot, each with its title on a caption strip.
+function buildGallery(lang) {
+  const copy = COPY[lang];
+  const columns = 3;
+  const gap = 20;
+  const cellWidth = (CANVAS.width - 80 - gap * (columns - 1)) / columns;
+  const cellHeight = 144;
+  const rowGap = 12;
+  const gridTop = 140;
+  const captionHeight = 34;
+
+  const cells = SLIDES.map((slide, index) => {
+    const x = 40 + (index % columns) * (cellWidth + gap);
+    const y = gridTop + Math.floor(index / columns) * (cellHeight + rowGap);
+    const [title] = slide[lang];
+    const href = shotAsDataUri(slide.file, 600);
+    return `
+  <clipPath id="cell-${index}"><rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" rx="14"/></clipPath>
+  <g clip-path="url(#cell-${index})">
+    <rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" fill="${COLORS.card}"/>
+    <image href="${href}" x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" preserveAspectRatio="xMidYMin slice"/>
+    <rect x="${x}" y="${y + cellHeight - captionHeight}" width="${cellWidth}" height="${captionHeight}" fill="${COLORS.charcoal}" fill-opacity="0.82"/>
+  </g>
+  <text x="${x + 14}" y="${y + cellHeight - 12}" ${textAttrs(TYPE.counter, `fill="${COLORS.paper}"`)}>${String(index + 1).padStart(2, "0")}  ${escapeXml(title)}</text>`;
+  }).join("");
+
+  return `${svgOpen("gallery", copy.galleryTitle, copy.galleryDesc)}
+  <rect width="${CANVAS.width}" height="${CANVAS.height}" fill="${COLORS.paper}"/>
+  <text x="40" y="62" ${textAttrs(TYPE.eyebrow, `fill="${COLORS.copperInk}"`)}>${escapeXml(copy.galleryEyebrow)}</text>
+  <text x="40" y="112" ${textAttrs({ ...TYPE.hero, size: 44 }, `fill="${COLORS.charcoal}"`)}>${escapeXml(copy.galleryHeading)}</text>
+  ${cells}
+  <text x="40" y="${CANVAS.height - 22}" ${textAttrs({ ...TYPE.body, size: 14 }, `fill="${COLORS.muted}"`)}>${escapeXml(copy.galleryNote)}</text>
+</svg>
+`;
+}
+
 const outputs = [
   { file: "banner.svg", build: () => buildHeader("en") },
   { file: "banner.pt-BR.svg", build: () => buildHeader("pt") },
   { file: "carousel.svg", build: () => buildCarousel("en") },
   { file: "carousel.pt-BR.svg", build: () => buildCarousel("pt") },
+  { file: "gallery.svg", build: () => buildGallery("en") },
+  { file: "gallery.pt-BR.svg", build: () => buildGallery("pt") },
 ];
 
 for (const output of outputs) {

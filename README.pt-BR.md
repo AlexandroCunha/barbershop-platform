@@ -33,6 +33,10 @@ bonito, uma agenda de horários e uma área do dono. Uma única instalação ate
   <img src="docs/carousel.pt-BR.svg" alt="Carrossel de capturas: o site, o agendamento, a área do dono e a área da plataforma, em sequência" width="100%">
 </p>
 
+<p align="center">
+  <img src="docs/gallery.pt-BR.svg" alt="Banner de galeria: as nove capturas em grade, com legenda em cada uma" width="100%">
+</p>
+
 ---
 
 ## ✨ O que você ganha
