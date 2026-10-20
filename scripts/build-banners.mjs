@@ -223,14 +223,31 @@ function buildCarousel(lang) {
 // They link to the full PNG in docs/screenshots.
 const THUMBS_DIR = join(ROOT, "docs", "thumbnails");
 
+// Every thumbnail is cover-cropped to this box, so the row has one size. The README shows them
+// at half this size, which keeps them sharp on high-density screens.
+const THUMB = { width: 200, height: 132 };
+
+function imageSize(path) {
+  const output = execFileSync("sips", ["-g", "pixelWidth", "-g", "pixelHeight", path], { encoding: "utf8" });
+  return {
+    width: Number(/pixelWidth: (\d+)/.exec(output)[1]),
+    height: Number(/pixelHeight: (\d+)/.exec(output)[1]),
+  };
+}
+
 function buildThumbnails() {
   mkdirSync(THUMBS_DIR, { recursive: true });
   for (const slide of SLIDES) {
+    const source = join(SHOTS_DIR, slide.file);
     const out = join(THUMBS_DIR, slide.file.replace(/\.png$/, ".jpg"));
-    execFileSync("sips", ["-Z", "320", "-s", "format", "jpeg", "-s", "formatOptions", "78", join(SHOTS_DIR, slide.file), "--out", out], {
+    const size = imageSize(source);
+    const scale = Math.max(THUMB.width / size.width, THUMB.height / size.height);
+    const scaled = { width: Math.ceil(size.width * scale), height: Math.ceil(size.height * scale) };
+    execFileSync("sips", ["-z", String(scaled.height), String(scaled.width), "-s", "format", "jpeg", "-s", "formatOptions", "78", source, "--out", out], {
       stdio: "ignore",
     });
-    console.log(`wrote docs/thumbnails/${slide.file.replace(/\.png$/, ".jpg")}`);
+    execFileSync("sips", ["--cropToHeightWidth", String(THUMB.height), String(THUMB.width), out], { stdio: "ignore" });
+    console.log(`wrote docs/thumbnails/${slide.file.replace(/\.png$/, ".jpg")} (${THUMB.width}x${THUMB.height})`);
   }
 }
 

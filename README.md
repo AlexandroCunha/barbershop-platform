@@ -30,20 +30,20 @@ a booking calendar and an owner area. One installation serves many shops.
 ## 👀 Take a look
 
 <p align="center">
-  <a href="docs/screenshots/01-website-hero.png"><img src="docs/thumbnails/01-website-hero.jpg" width="100" alt="01. The website"></a>
-  <a href="docs/screenshots/02-barbers-and-services-menu.png"><img src="docs/thumbnails/02-barbers-and-services-menu.jpg" width="100" alt="02. Barbers and services"></a>
-  <a href="docs/screenshots/03-booking-date-and-time.png"><img src="docs/thumbnails/03-booking-date-and-time.jpg" width="100" alt="03. Booking"></a>
-  <a href="docs/screenshots/04-booking-details-and-summary.png"><img src="docs/thumbnails/04-booking-details-and-summary.jpg" width="100" alt="04. Confirm"></a>
-  <a href="docs/screenshots/05-mobile-hero.png"><img src="docs/thumbnails/05-mobile-hero.jpg" width="100" alt="05. Mobile first"></a>
-  <a href="docs/screenshots/06-mobile-barbers.png"><img src="docs/thumbnails/06-mobile-barbers.jpg" width="100" alt="06. Mobile barbers"></a>
-  <a href="docs/screenshots/07-owner-area-business.png"><img src="docs/thumbnails/07-owner-area-business.jpg" width="100" alt="07. Owner area"></a>
-  <a href="docs/screenshots/08-owner-area-services.png"><img src="docs/thumbnails/08-owner-area-services.jpg" width="100" alt="08. Services"></a>
-  <a href="docs/screenshots/09-platform-barbershops.png"><img src="docs/thumbnails/09-platform-barbershops.jpg" width="100" alt="09. Platform owner"></a>
-  <br><sub>Click a thumbnail to open the full screenshot.</sub>
+  <img src="docs/carousel.svg" alt="Screenshot carousel: the website, booking, the owner area and the platform area, shown in turn" width="100%">
 </p>
 
 <p align="center">
-  <img src="docs/carousel.svg" alt="Screenshot carousel: the website, booking, the owner area and the platform area, shown in turn" width="100%">
+  <a href="docs/screenshots/01-website-hero.png"><img src="docs/thumbnails/01-website-hero.jpg" width="100" height="66" alt="01. The website"></a>
+  <a href="docs/screenshots/02-barbers-and-services-menu.png"><img src="docs/thumbnails/02-barbers-and-services-menu.jpg" width="100" height="66" alt="02. Barbers and services"></a>
+  <a href="docs/screenshots/03-booking-date-and-time.png"><img src="docs/thumbnails/03-booking-date-and-time.jpg" width="100" height="66" alt="03. Booking"></a>
+  <a href="docs/screenshots/04-booking-details-and-summary.png"><img src="docs/thumbnails/04-booking-details-and-summary.jpg" width="100" height="66" alt="04. Confirm"></a>
+  <a href="docs/screenshots/05-mobile-hero.png"><img src="docs/thumbnails/05-mobile-hero.jpg" width="100" height="66" alt="05. Mobile first"></a>
+  <a href="docs/screenshots/06-mobile-barbers.png"><img src="docs/thumbnails/06-mobile-barbers.jpg" width="100" height="66" alt="06. Mobile barbers"></a>
+  <a href="docs/screenshots/07-owner-area-business.png"><img src="docs/thumbnails/07-owner-area-business.jpg" width="100" height="66" alt="07. Owner area"></a>
+  <a href="docs/screenshots/08-owner-area-services.png"><img src="docs/thumbnails/08-owner-area-services.jpg" width="100" height="66" alt="08. Services"></a>
+  <a href="docs/screenshots/09-platform-barbershops.png"><img src="docs/thumbnails/09-platform-barbershops.jpg" width="100" height="66" alt="09. Platform owner"></a>
+  <br><sub>Click a thumbnail to open the full screenshot.</sub>
 </p>
 
 ---
