@@ -16,7 +16,8 @@
     "db:migrate": "node --env-file=.env dist/db/migrar.js",
     "test": "tsc -p tsconfig.json && node --test --test-concurrency=1 \"dist/test/**/*.test.js\"",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit",
-    "simulate": "node scripts/simulate-agents.mjs"
+    "simulate": "node scripts/simulate-agents.mjs",
+    "carousel": "node scripts/build-carousel.mjs"
   },
   "dependencies": {
     "express": "^5.1.0",

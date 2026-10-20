@@ -29,56 +29,9 @@ bonito, uma agenda de horários e uma área do dono. Uma única instalação ate
 
 ## 👀 Dê uma olhada
 
-<table>
-  <tr>
-    <td colspan="2" align="center">
-      <img src="docs/screenshots/01-website-hero.png" alt="Site da barbearia: seção principal" width="100%"><br>
-      <sub><b>O site</b>: uma primeira impressão que combina com a barbearia</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/02-barbers-and-services-menu.png" alt="Barbeiros e o cardápio de serviços" width="100%"><br>
-      <sub><b>Barbeiros e serviços</b>: escolha um barbeiro e um serviço lado a lado</sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/03-booking-date-and-time.png" alt="Escolha de data e horário" width="100%"><br>
-      <sub><b>Agendamento</b>: escolha um dia e um horário livre</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
-      <img src="docs/screenshots/04-booking-details-and-summary.png" alt="Dados do cliente e resumo do agendamento" width="100%"><br>
-      <sub><b>Confirmação</b>: um resumo ao vivo do atendimento</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/05-mobile-hero.png" alt="Site visto no celular" width="100%"><br>
-      <sub><b>Feito para o celular</b>: fica ótimo no telefone</sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/06-mobile-barbers.png" alt="Seção de barbeiros no celular" width="100%"><br>
-      <sub><b>Barbeiros no celular</b>: a equipe a um toque de distância</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/07-owner-area-business.png" alt="Área do dono: dados do negócio" width="100%"><br>
-      <sub><b>Área do dono</b>: o dono edita tudo sem mexer em código</sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/08-owner-area-services.png" alt="Área do dono: serviços" width="100%"><br>
-      <sub><b>Serviços</b>: preços, durações e descrições</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
-      <img src="docs/screenshots/09-platform-barbershops.png" alt="Área da plataforma: barbearias e licenças" width="100%"><br>
-      <sub><b>Dono da plataforma</b>: todas as barbearias e suas licenças em um lugar</sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/carousel.pt-BR.svg" alt="Carrossel de capturas: o site, o agendamento, a área do dono e a área da plataforma, em sequência" width="100%">
+</p>
 
 ---
 

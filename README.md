@@ -29,56 +29,9 @@ a booking calendar and an owner area. One installation serves many shops.
 
 ## 👀 Take a look
 
-<table>
-  <tr>
-    <td colspan="2" align="center">
-      <img src="docs/screenshots/01-website-hero.png" alt="The barbershop website: hero section" width="100%"><br>
-      <sub><b>The website</b>: a first impression that fits the shop</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/02-barbers-and-services-menu.png" alt="Barbers and the services menu" width="100%"><br>
-      <sub><b>Barbers and services</b>: pick a barber and a service side by side</sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/03-booking-date-and-time.png" alt="Choosing a date and time" width="100%"><br>
-      <sub><b>Booking</b>: choose a day and a free time</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
-      <img src="docs/screenshots/04-booking-details-and-summary.png" alt="Customer details and booking summary" width="100%"><br>
-      <sub><b>Confirm</b>: a live summary of the appointment</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/05-mobile-hero.png" alt="Mobile view of the website" width="100%"><br>
-      <sub><b>Mobile first</b>: it looks great on a phone</sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/06-mobile-barbers.png" alt="Mobile view of the barbers section" width="100%"><br>
-      <sub><b>Mobile barbers</b>: the team, one tap away</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/07-owner-area-business.png" alt="Owner area: business details" width="100%"><br>
-      <sub><b>Owner area</b>: the owner edits everything without touching code</sub>
-    </td>
-    <td width="50%" valign="top" align="center">
-      <img src="docs/screenshots/08-owner-area-services.png" alt="Owner area: services" width="100%"><br>
-      <sub><b>Services</b>: prices, durations and descriptions</sub>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
-      <img src="docs/screenshots/09-platform-barbershops.png" alt="Platform area: barbershops and licenses" width="100%"><br>
-      <sub><b>Platform owner</b>: every shop and its license in one place</sub>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/carousel.svg" alt="Screenshot carousel: the website, booking, the owner area and the platform area, shown in turn" width="100%">
+</p>
 
 ---
 
