@@ -9,7 +9,7 @@
 // Image resizing uses macOS `sips`.
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -218,6 +218,23 @@ function buildCarousel(lang) {
 </svg>
 `;
 }
+
+// Small JPEG thumbnails of each screenshot, used as clickable previews above the carousel.
+// They link to the full PNG in docs/screenshots.
+const THUMBS_DIR = join(ROOT, "docs", "thumbnails");
+
+function buildThumbnails() {
+  mkdirSync(THUMBS_DIR, { recursive: true });
+  for (const slide of SLIDES) {
+    const out = join(THUMBS_DIR, slide.file.replace(/\.png$/, ".jpg"));
+    execFileSync("sips", ["-Z", "320", "-s", "format", "jpeg", "-s", "formatOptions", "78", join(SHOTS_DIR, slide.file), "--out", out], {
+      stdio: "ignore",
+    });
+    console.log(`wrote docs/thumbnails/${slide.file.replace(/\.png$/, ".jpg")}`);
+  }
+}
+
+buildThumbnails();
 
 const outputs = [
   { file: "banner.svg", build: () => buildHeader("en") },
