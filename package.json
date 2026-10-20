@@ -17,7 +17,7 @@
     "test": "tsc -p tsconfig.json && node --test --test-concurrency=1 \"dist/test/**/*.test.js\"",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit",
     "simulate": "node scripts/simulate-agents.mjs",
-    "carousel": "node scripts/build-carousel.mjs"
+    "banners": "node scripts/build-banners.mjs"
   },
   "dependencies": {
     "express": "^5.1.0",

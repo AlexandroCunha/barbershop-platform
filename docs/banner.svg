@@ -1,16 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 340" role="img" aria-labelledby="banner-title banner-desc">
-  <title id="banner-title">Barbearia</title>
-  <desc id="banner-desc">Online booking for barbershops, made simple.</desc>
-  <rect width="1280" height="340" fill="#f3f0e9"/>
-  <rect x="924" y="64" width="300" height="232" fill="none" stroke="#171717" stroke-opacity="0.3"/>
-  <rect x="900" y="40" width="300" height="232" fill="#41483a"/>
-  <rect x="900" y="40" width="300" height="6" fill="#b77951"/>
-  <text x="1050" y="222" text-anchor="middle" font-family="DM Serif Display, Georgia, serif" font-size="190" fill="#f3f0e9">B</text>
-  <text x="72" y="92" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="600" letter-spacing="4" fill="#8a5a3b">BOOKING FOR BARBERSHOPS</text>
-  <text x="66" y="184" font-family="DM Serif Display, Georgia, serif" font-size="104" fill="#171717">Barbearia</text>
-  <text x="72" y="232" font-family="Inter, system-ui, sans-serif" font-size="22" fill="#5e5a53">Every shop gets its own address, website and calendar.</text>
-  <rect x="72" y="256" width="236" height="44" rx="22" fill="#171717"/>
-  <text x="190" y="284" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="600" fill="#f3f0e9">Book an appointment</text>
-  <rect x="0" y="300" width="1280" height="40" fill="#171717"/>
-  <text x="40" y="327" font-family="DM Serif Display, Georgia, serif" font-style="italic" font-size="19" fill="#f3f0e9" xml:space="preserve">Haircut <tspan fill="#b77951">·</tspan> Skin fade <tspan fill="#b77951">·</tspan> Beard trim <tspan fill="#b77951">·</tspan> Haircut and beard <tspan fill="#b77951">·</tspan> Book online <tspan fill="#b77951">·</tspan> Arrive when it suits you</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" role="img" aria-labelledby="header-title header-desc">
+  <title id="header-title">Barbearia</title>
+  <desc id="header-desc">Every shop gets its own address, website and calendar.</desc>
+  <rect width="1000" height="640" fill="#f3f0e9"/>
+
+  <rect x="628" y="148" width="360" height="400" fill="none" stroke="#171717" stroke-opacity="0.3"/>
+  <rect x="600" y="120" width="360" height="400" fill="#41483a"/>
+  <rect x="600" y="120" width="360" height="6" fill="#b77951"/>
+  <text x="780" y="400" text-anchor="middle" font-family="DM Serif Display, Georgia, serif" font-size="240" font-weight="400" fill="#f3f0e9">B</text>
+
+  <text x="60" y="150" font-family="Inter, system-ui, -apple-system, Segoe UI, sans-serif" font-size="14" font-weight="600" letter-spacing="4" fill="#8a5a3b">BOOKING FOR BARBERSHOPS</text>
+  <text x="56" y="268" font-family="DM Serif Display, Georgia, serif" font-size="104" font-weight="400" fill="#171717">Barbearia</text>
+  <text x="60" y="326" font-family="Inter, system-ui, -apple-system, Segoe UI, sans-serif" font-size="24" font-weight="400" fill="#5e5a53">Every shop gets its own address,</text>
+  <text x="60" y="358" font-family="Inter, system-ui, -apple-system, Segoe UI, sans-serif" font-size="24" font-weight="400" fill="#5e5a53">website and calendar.</text>
+
+  <rect x="60" y="400" width="280" height="54" rx="27" fill="#171717"/>
+  <text x="200" y="433" text-anchor="middle" font-family="Inter, system-ui, -apple-system, Segoe UI, sans-serif" font-size="17" font-weight="600" fill="#f3f0e9">Book an appointment</text>
+  <text x="364" y="433" font-family="Inter, system-ui, -apple-system, Segoe UI, sans-serif" font-size="17" font-weight="600" fill="#171717">View services →</text>
+  <line x1="364" y1="442" x2="499" y2="442" stroke="#171717" stroke-width="1.5"/>
+
+  <rect x="0" y="596" width="1000" height="44" fill="#171717"/>
+  <text x="40" y="624" font-family="DM Serif Display, Georgia, serif" font-size="18" font-weight="400" font-style="italic" fill="#f3f0e9" xml:space="preserve">Haircut<tspan fill="#b77951"> · </tspan>Skin fade<tspan fill="#b77951"> · </tspan>Beard trim<tspan fill="#b77951"> · </tspan>Haircut and beard<tspan fill="#b77951"> · </tspan>Book online<tspan fill="#b77951"> · </tspan>Arrive when it suits you</text>
 </svg>
