@@ -243,13 +243,14 @@ function LicenseRow({ tenant, onSaved }: { tenant: TenantSummary; onSaved: (tena
         <Field label="Trial ends" htmlFor={`trial-${tenant.id}`}>
           <input id={`trial-${tenant.id}`} type="date" value={trialEnds} onChange={(event) => setTrialEnds(event.target.value)} />
         </Field>
-        <Field label="Paid until" htmlFor={`paid-${tenant.id}`} hint="Empty means no end date.">
+        <Field label="Paid until" htmlFor={`paid-${tenant.id}`}>
           <input id={`paid-${tenant.id}`} type="date" value={paidUntil} onChange={(event) => setPaidUntil(event.target.value)} />
         </Field>
         <button type="button" className="btn btn-dark" onClick={save} disabled={busy}>
           {busy ? "Saving…" : "Save"}
         </button>
       </div>
+      <p className="muted note">Leave "Paid until" empty for no end date.</p>
       {result && <Notice kind={result.kind}>{result.text}</Notice>}
     </div>
   );
