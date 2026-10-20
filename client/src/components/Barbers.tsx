@@ -1,4 +1,5 @@
 import { mediaSrc } from "../media";
+import { useTenant } from "../tenant-context";
 import type { Professional } from "../types";
 
 interface Props {
@@ -11,6 +12,7 @@ interface Props {
 
 /** The barbers, shown in the main column of the barbers section. */
 export function Barbers({ professionals, selectedId, loading, error, onChoose }: Props) {
+  const { slug } = useTenant();
   return (
     <div className="showcase-main">
       <header className="section-head">
@@ -42,7 +44,7 @@ export function Barbers({ professionals, selectedId, loading, error, onChoose }:
                   onClick={() => onChoose(isSelected ? undefined : person.id)}
                 >
                   {person.photo ? (
-                    <img src={mediaSrc(person.photo)} alt="" />
+                    <img src={mediaSrc(slug, person.photo)} alt="" />
                   ) : (
                     <span className="barber-initial" aria-hidden="true">
                       {person.name.charAt(0)}

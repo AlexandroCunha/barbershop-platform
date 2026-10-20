@@ -1,0 +1,67 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 Alexandro Cunha. All rights reserved.
+
+DRAFT: this text is a starting point and has not been reviewed by a lawyer.
+Review it with a qualified lawyer in each country where the software is sold
+before relying on it.
+
+1. Ownership
+The Barbearia software, including its source code, design, documentation and
+all related materials (the "Software"), is owned by Alexandro Cunha (the
+"Licensor"). The Software is protected by copyright and other laws. No rights
+are granted except those stated in this license.
+
+2. Hosted use (the subscription)
+A barbershop that subscribes to the hosted service receives a non-exclusive,
+non-transferable, revocable right to use the Software through the Licensor's
+service for its own business, while its subscription is active. Access is
+governed by the Terms of Service and the subscription plan the barbershop
+accepts. The barbershop does not receive a copy of the Software.
+
+3. Self-hosting
+Running the Software on infrastructure the customer controls requires a
+separate written agreement with the Licensor. Without that agreement, no copy
+of the Software may be installed or run outside the Licensor's service.
+
+4. Restrictions
+Unless a separate written agreement says otherwise, you may not:
+a) copy, modify, translate, adapt or create derivative works of the Software;
+b) sell, rent, lease, sublicense, distribute or otherwise make the Software
+   available to third parties;
+c) reverse engineer, decompile or disassemble the Software, except where the
+   law expressly allows it despite this restriction;
+d) remove or alter copyright or proprietary notices;
+e) use the Software to build a competing product or service;
+f) use the Software for any unlawful purpose.
+
+5. Customer content
+Each barbershop keeps ownership of the data and content it enters into the
+Software (its business details, photographs, services, barbers and bookings).
+The Licensor processes that data only to provide the service, as described in
+the Privacy Policy and the Terms of Service.
+
+6. Open-source components
+The Software uses third-party open-source components, each under its own
+license. Those licenses apply to those components and are listed in the
+dependency files of the project.
+
+7. No warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NON-INFRINGEMENT.
+
+8. Limitation of liability
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE LICENSOR IS NOT LIABLE FOR ANY
+INDIRECT, INCIDENTAL, SPECIAL OR CONSEQUENTIAL DAMAGES, OR FOR LOST PROFITS OR
+DATA, ARISING FROM THE USE OF THE SOFTWARE. THE LICENSOR'S TOTAL LIABILITY IS
+LIMITED TO THE AMOUNT PAID BY THE CUSTOMER FOR THE SERVICE IN THE TWELVE MONTHS
+BEFORE THE EVENT THAT GAVE RISE TO THE CLAIM.
+
+9. Termination
+This license ends automatically if you breach it. When a subscription ends or
+is suspended, the right to use the hosted service ends with it. Sections 4, 6,
+7, 8 and 10 survive termination.
+
+10. Governing law
+[To be completed with the governing law and courts chosen with a lawyer.]

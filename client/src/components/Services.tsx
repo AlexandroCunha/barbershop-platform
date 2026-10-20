@@ -1,5 +1,5 @@
 import { formatDuration, formatPrice } from "../format";
-import { useBusiness } from "../hooks";
+import { useBusiness } from "../tenant-context";
 import type { Service } from "../types";
 
 interface Props {

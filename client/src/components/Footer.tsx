@@ -1,4 +1,4 @@
-import { useBusiness } from "../hooks";
+import { useBusiness } from "../tenant-context";
 
 export function Footer() {
   const business = useBusiness();

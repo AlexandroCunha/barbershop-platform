@@ -1,11 +1,11 @@
 import { openStatus } from "../format";
 import { mediaSrc } from "../media";
-import { useBusiness } from "../hooks";
+import { useTenant } from "../tenant-context";
 
 export function Hero() {
-  const business = useBusiness();
+  const { slug, business } = useTenant();
   const status = openStatus(business);
-  const image = business.heroImage ? mediaSrc(business.heroImage) : null;
+  const image = business.heroImage ? mediaSrc(slug, business.heroImage) : null;
 
   return (
     <section id="top" className="hero">

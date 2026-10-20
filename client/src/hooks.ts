@@ -1,6 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { api, ApiError } from "./api";
-import type { Business } from "./types";
+import { useEffect, useState } from "react";
+import { ApiError } from "./api";
 
 export interface AsyncState<T> {
   data: T | null;
@@ -8,7 +7,10 @@ export interface AsyncState<T> {
   loading: boolean;
 }
 
-/** Loads a value whenever `deps` change, ignoring responses that are no longer current. */
+/**
+ * Loads a value whenever `deps` change. Responses that arrive after a newer
+ * request started, or after the component unmounted, are ignored.
+ */
 export function useAsync<T>(load: (signal: AbortSignal) => Promise<T>, deps: unknown[]): AsyncState<T> {
   const [state, setState] = useState<AsyncState<T>>({ data: null, error: null, loading: true });
 
@@ -28,33 +30,4 @@ export function useAsync<T>(load: (signal: AbortSignal) => Promise<T>, deps: unk
   }, deps);
 
   return state;
-}
-
-export const useServices = () => useAsync(() => api.services(), []);
-
-export const useProfessionals = () => useAsync(() => api.professionals(), []);
-
-export const useBusinessProfile = () => useAsync(() => api.business(), []);
-
-export function useAvailability(serviceId?: number, date?: string, professionalId?: number) {
-  return useAsync(
-    (signal) => {
-      if (!serviceId || !date) {
-        return Promise.resolve({ date: date ?? "", times: [] });
-      }
-      return api.availability(serviceId, date, professionalId, signal);
-    },
-    [serviceId, date, professionalId],
-  );
-}
-
-/** The business profile, shared with every part of the public site. */
-export const BusinessContext = createContext<Business | null>(null);
-
-export function useBusiness(): Business {
-  const business = useContext(BusinessContext);
-  if (!business) {
-    throw new Error("useBusiness must be used inside BusinessContext");
-  }
-  return business;
 }

@@ -4,11 +4,11 @@ import type {
   Business,
   Confirmation,
   MediaItem,
+  OwnerSession,
   Professional,
   Service,
+  TenantSummary,
 } from "./types";
-
-const BASE = "/api";
 
 /** Fired on the window when an owner request is refused because the session has ended. */
 export const OWNER_SESSION_EXPIRED = "owner-session-expired";
@@ -23,90 +23,105 @@ export class ApiError extends Error {
   }
 }
 
-async function readBody(response: Response): Promise<any> {
-  return response.json().catch(() => ({}));
-}
+const json = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
 
-function errorFrom(response: Response, body: { error?: string }): ApiError {
-  return new ApiError(body.error ?? "Something went wrong. Please try again.", response.status);
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  const body = await readBody(response);
-
-  if (!response.ok) {
-    throw errorFrom(response, body);
-  }
-  return body as T;
-}
-
-/**
- * Owner requests. The session lives in an HttpOnly cookie that the browser sends
- * by itself, so no secret is kept in page code.
- */
-async function ownerRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function send<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (!headers.has("Content-Type") && typeof init.body === "string") {
+  if (typeof init.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${BASE}/admin${path}`, { ...init, headers, credentials: "same-origin" });
-  const body = await readBody(response);
-
+  const response = await fetch(url, { ...init, headers, credentials: "same-origin" });
+  const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    // A refused sign-in is an answer, not an expired session.
-    if (response.status === 401 && path !== "/login") {
-      window.dispatchEvent(new Event(OWNER_SESSION_EXPIRED));
-    }
-    throw errorFrom(response, body);
+    throw new ApiError(body.error ?? "Something went wrong. Please try again.", response.status);
   }
   return body as T;
 }
 
-export const api = {
-  business: () => request<Business>("/business"),
+/** Owner calls: a refused session tells the page to show the sign-in form again. */
+function ownerSend<T>(url: string, init: RequestInit | undefined, action: string): Promise<T> {
+  return send<T>(url, init).catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 401 && action !== "login") {
+      window.dispatchEvent(new Event(OWNER_SESSION_EXPIRED));
+    }
+    throw error;
+  });
+}
 
-  services: () => request<Service[]>("/services"),
+/** Everything one barbershop's site and owner area need. Build it once per shop. */
+export function tenantApi(slug: string) {
+  const base = `/api/t/${encodeURIComponent(slug)}`;
+  const owner = `${base}/owner`;
 
-  professionals: () => request<Professional[]>("/professionals"),
+  return {
+    business: () => send<Business>(`${base}/business`),
 
-  availability: (serviceId: number, date: string, professionalId?: number, signal?: AbortSignal) => {
-    const query = new URLSearchParams({ serviceId: String(serviceId), date });
-    if (professionalId !== undefined) query.set("professionalId", String(professionalId));
-    return request<Availability>(`/availability?${query}`, { signal });
-  },
+    services: () => send<Service[]>(`${base}/services`),
 
-  book: (input: BookingInput) =>
-    request<Confirmation>("/bookings", { method: "POST", body: JSON.stringify(input) }),
-};
+    professionals: () => send<Professional[]>(`${base}/professionals`),
 
-export const owner = {
-  session: () => ownerRequest<{ ok: boolean }>("/session"),
+    availability: (serviceId: number, date: string, professionalId?: number, signal?: AbortSignal) => {
+      const query = new URLSearchParams({ serviceId: String(serviceId), date });
+      if (professionalId !== undefined) query.set("professionalId", String(professionalId));
+      return send<Availability>(`${base}/availability?${query}`, { signal });
+    },
 
-  login: (token: string) =>
-    ownerRequest<{ ok: boolean }>("/login", { method: "POST", body: JSON.stringify({ token }) }),
+    book: (input: BookingInput) => send<Confirmation>(`${base}/bookings`, json("POST", input)),
 
-  logout: () => ownerRequest<unknown>("/logout", { method: "POST" }),
+    owner: {
+      session: () => ownerSend<OwnerSession>(`${owner}/session`, undefined, "session"),
 
-  saveBusiness: (business: Business) =>
-    ownerRequest<Business>("/business", { method: "PUT", body: JSON.stringify(business) }),
+      login: (email: string, password: string) =>
+        ownerSend<{ ok: boolean }>(`${owner}/login`, json("POST", { email, password }), "login"),
 
-  listMedia: () => ownerRequest<MediaItem[]>("/media"),
+      logout: () => ownerSend<unknown>(`${owner}/logout`, { method: "POST" }, "logout"),
 
-  uploadMedia: (file: File) =>
-    ownerRequest<MediaItem>(`/media?name=${encodeURIComponent(file.name)}`, {
-      method: "POST",
-      headers: { "Content-Type": file.type },
-      body: file,
-    }),
+      changePassword: (currentPassword: string, newPassword: string) =>
+        ownerSend<{ ok: boolean }>(`${owner}/password`, json("PUT", { currentPassword, newPassword }), "password"),
+
+      saveBusiness: (business: Business) =>
+        ownerSend<Business>(`${owner}/business`, json("PUT", business), "business"),
+
+      listMedia: () => ownerSend<MediaItem[]>(`${owner}/media`, undefined, "media"),
+
+      uploadMedia: (file: File) =>
+        ownerSend<MediaItem>(
+          `${owner}/media?name=${encodeURIComponent(file.name)}`,
+          { method: "POST", headers: { "Content-Type": file.type }, body: file },
+          "media",
+        ),
+
+      createService: (input: { name: string; description: string; priceCents: number; durationMinutes: number }) =>
+    ownerSend<Service>(`${owner}/services`, json("POST", input), "services"),
+
+  createProfessional: (input: { name: string; specialties: string[]; bio: string }) =>
+    ownerSend<Professional>(`${owner}/professionals`, json("POST", input), "professionals"),
 
   updateService: (id: number, patch: Partial<Omit<Service, "id">>) =>
-    ownerRequest<Service>(`/services/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+        ownerSend<Service>(`${owner}/services/${id}`, json("PATCH", patch), "services"),
 
-  updateProfessional: (id: number, patch: Partial<Omit<Professional, "id">>) =>
-    ownerRequest<Professional>(`/professionals/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+      updateProfessional: (id: number, patch: Partial<Omit<Professional, "id">>) =>
+        ownerSend<Professional>(`${owner}/professionals/${id}`, json("PATCH", patch), "professionals"),
+    },
+  };
+}
+
+export type TenantApi = ReturnType<typeof tenantApi>;
+
+/** The platform owner's calls. */
+export const platformApi = {
+  session: () => send<{ ok: boolean }>("/api/platform/session"),
+
+  login: (token: string) => send<{ ok: boolean }>("/api/platform/session", json("POST", { token })),
+
+  logout: () => send<unknown>("/api/platform/logout", { method: "POST" }),
+
+  tenants: () => send<TenantSummary[]>("/api/platform/tenants"),
+
+  createTenant: (input: { name: string; slug: string; ownerEmail: string; ownerPassword: string }) =>
+    send<TenantSummary>("/api/platform/tenants", json("POST", input)),
+
+  setLicense: (id: number, input: { status: string; trialEndsAt: string | null; paidUntil: string | null }) =>
+    send<TenantSummary>(`/api/platform/tenants/${id}/license`, json("PATCH", input)),
 };

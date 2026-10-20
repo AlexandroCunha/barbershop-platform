@@ -1,21 +1,20 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, owner } from "../api";
-import { useBusinessProfile } from "../hooks";
+import { useTenant } from "../tenant-context";
 import type { Service } from "../types";
 import { Field, Notice, errorText } from "./ui";
+import { NewServiceForm } from "./NewServiceForm";
 
 export function ServicesPanel() {
-  const business = useBusinessProfile();
+  const { api, business } = useTenant();
   const [services, setServices] = useState<Service[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const currency = business.data?.currency ?? "EUR";
 
   useEffect(() => {
     api
       .services()
       .then(setServices)
       .catch((caught: unknown) => setLoadError(errorText(caught)));
-  }, []);
+  }, [api]);
 
   if (loadError) return <Notice kind="error">{loadError}</Notice>;
   if (!services) return <p className="status">Loading services…</p>;
@@ -23,13 +22,14 @@ export function ServicesPanel() {
   return (
     <div className="owner-stack">
       <p className="muted">
-        Prices are in {currency}. The duration decides how long each booking holds the chair.
+        Prices are in {business.currency}. The duration decides how long each booking holds the chair.
       </p>
+      <NewServiceForm onCreated={(created) => setServices((current) => [...(current ?? []), created])} />
       {services.map((service) => (
         <ServiceCard
           key={service.id}
           service={service}
-          currency={currency}
+          currency={business.currency}
           onSaved={(saved) =>
             setServices((current) => current?.map((item) => (item.id === saved.id ? saved : item)) ?? null)
           }
@@ -48,6 +48,7 @@ function ServiceCard({
   currency: string;
   onSaved: (saved: Service) => void;
 }) {
+  const { api } = useTenant();
   const [name, setName] = useState(service.name);
   const [description, setDescription] = useState(service.description);
   const [price, setPrice] = useState((service.priceCents / 100).toFixed(2));
@@ -72,7 +73,7 @@ function ServiceCard({
     setSaving(true);
     setResult(null);
     try {
-      const saved = await owner.updateService(service.id, {
+      const saved = await api.owner.updateService(service.id, {
         name: name.trim(),
         description: description.trim(),
         priceCents,

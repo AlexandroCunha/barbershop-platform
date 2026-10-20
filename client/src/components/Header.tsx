@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useBusiness } from "../hooks";
+import { useBusiness } from "../tenant-context";
 
 export function Header() {
   const business = useBusiness();

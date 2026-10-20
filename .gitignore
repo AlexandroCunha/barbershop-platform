@@ -6,10 +6,7 @@ dist-client
 # Secrets and local settings
 .env
 
-# The owner's business profile and photos are data, not source code.
-# The template content/business.example.json is what ships.
-content/business.json
-content/*.tmp
+# Photos uploaded by shops are data, not source code.
 media/*
 !media/.gitkeep
 !media/README.md

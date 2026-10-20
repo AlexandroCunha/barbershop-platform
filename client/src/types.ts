@@ -67,3 +67,26 @@ export interface MediaItem {
   name: string;
   url: string;
 }
+
+/** What a barbershop may do right now. */
+export type AccessState = "trial" | "active" | "expired" | "suspended";
+
+export interface LicenseSummary {
+  state: AccessState;
+  endsAt: string | null;
+}
+
+export interface OwnerSession {
+  ok: boolean;
+  license: LicenseSummary;
+}
+
+/** One barbershop as the platform owner sees it. */
+export interface TenantSummary extends LicenseSummary {
+  id: number;
+  slug: string;
+  name: string;
+  status: "trial" | "active" | "suspended";
+  trialEndsAt: string | null;
+  paidUntil: string | null;
+}

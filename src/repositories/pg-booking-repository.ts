@@ -16,7 +16,7 @@ interface BookingRow {
   created_at: Date;
 }
 
-const SELECT_COLUMNS = `
+const COLUMNS = `
   id, service_id, professional_id, booking_date::text AS booking_date, start_minute, end_minute,
   customer_name, customer_email, customer_phone, created_at`;
 
@@ -38,24 +38,26 @@ const toBooking = (row: BookingRow): Booking => ({
 export class PgBookingRepository implements BookingRepository {
   constructor(private readonly db: DbPool) {}
 
-  async findByProfessionalAndDate(professionalId: number, isoDate: string): Promise<Booking[]> {
+  async findByProfessionalAndDate(tenantId: number, professionalId: number, isoDate: string): Promise<Booking[]> {
     const { rows } = await this.db.query<BookingRow>(
-      `SELECT ${SELECT_COLUMNS} FROM bookings
-       WHERE professional_id = $1 AND booking_date = $2
+      `SELECT ${COLUMNS} FROM bookings
+       WHERE tenant_id = $1 AND professional_id = $2 AND booking_date = $3
        ORDER BY start_minute`,
-      [professionalId, isoDate],
+      [tenantId, professionalId, isoDate],
     );
     return rows.map(toBooking);
   }
 
-  async create(booking: NewBooking): Promise<Booking> {
+  async create(tenantId: number, booking: NewBooking): Promise<Booking> {
     try {
       const { rows } = await this.db.query<BookingRow>(
         `INSERT INTO bookings
-           (service_id, professional_id, booking_date, start_minute, end_minute, customer_name, customer_email, customer_phone)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING ${SELECT_COLUMNS}`,
+           (tenant_id, service_id, professional_id, booking_date, start_minute, end_minute,
+            customer_name, customer_email, customer_phone)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING ${COLUMNS}`,
         [
+          tenantId,
           booking.serviceId,
           booking.professionalId,
           booking.date,
@@ -68,14 +70,10 @@ export class PgBookingRepository implements BookingRepository {
       );
       return toBooking(rows[0]!);
     } catch (error) {
-      if (isUniqueViolation(error)) {
+      if (typeof error === "object" && error !== null && "code" in error && error.code === UNIQUE_VIOLATION) {
         throw new AppError(409, "That time is no longer available");
       }
       throw error;
     }
   }
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === UNIQUE_VIOLATION;
 }

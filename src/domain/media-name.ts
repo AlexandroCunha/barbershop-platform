@@ -16,7 +16,7 @@ export function hasMediaExtension(name: string): boolean {
   return MEDIA_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }
 
-/** Path under which the site serves a media file. */
-export function mediaUrl(name: string): string {
-  return `/media/${encodeURIComponent(name)}`;
+/** Path under which the site serves one shop's photo. */
+export function mediaUrl(slug: string, name: string): string {
+  return `/media/${slug}/${encodeURIComponent(name)}`;
 }

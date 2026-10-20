@@ -1,12 +1,15 @@
-/** Owner tokens shorter than this are too easy to guess. */
-const MIN_ADMIN_TOKEN_LENGTH = 24;
+/** Shortest accepted values, so the secrets cannot be guessed easily. */
+const MIN_SESSION_SECRET_LENGTH = 32;
+const MIN_PLATFORM_TOKEN_LENGTH = 24;
 
 export interface Config {
   port: number;
   databaseUrl: string;
-  /** Owner's access token. Undefined keeps the owner area closed. */
-  adminToken: string | undefined;
-  /** Send cookies only over HTTPS. On by default in production. */
+  /** Signs owner and platform sessions. Changing it signs everyone out. */
+  sessionSecret: string;
+  /** Platform owner's token for /platform. Undefined keeps the platform area closed. */
+  platformToken: string | undefined;
+  /** Send session cookies only over HTTPS. On by default in production. */
   secureCookies: boolean;
   /** Trust X-Forwarded-For from a reverse proxy. */
   trustProxy: boolean;
@@ -25,9 +28,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error("PORT must be a number between 1 and 65535");
   }
 
-  const adminToken = env.ADMIN_TOKEN?.trim() || undefined;
-  if (adminToken !== undefined && adminToken.length < MIN_ADMIN_TOKEN_LENGTH) {
-    throw new Error(`ADMIN_TOKEN must be at least ${MIN_ADMIN_TOKEN_LENGTH} characters long`);
+  const sessionSecret = env.SESSION_SECRET?.trim() ?? "";
+  if (sessionSecret.length < MIN_SESSION_SECRET_LENGTH) {
+    throw new Error(`SESSION_SECRET must be at least ${MIN_SESSION_SECRET_LENGTH} characters long`);
+  }
+
+  const platformToken = env.PLATFORM_ADMIN_TOKEN?.trim() || undefined;
+  if (platformToken !== undefined && platformToken.length < MIN_PLATFORM_TOKEN_LENGTH) {
+    throw new Error(`PLATFORM_ADMIN_TOKEN must be at least ${MIN_PLATFORM_TOKEN_LENGTH} characters long`);
   }
 
   const production = env.NODE_ENV === "production";
@@ -35,7 +43,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
     port,
     databaseUrl,
-    adminToken,
+    sessionSecret,
+    platformToken,
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
     trustProxy: isTrue(env.TRUST_PROXY),
   };

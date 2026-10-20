@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, ApiError } from "../api";
+import { ApiError } from "../api";
 import { formatDate, formatDuration, formatPrice, todayIn } from "../format";
-import { useAvailability, useBusiness } from "../hooks";
-import type { Confirmation, Professional, Service } from "../types";
+import { useAsync } from "../hooks";
+import { useTenant } from "../tenant-context";
+import type { Availability, Confirmation, Professional, Service } from "../types";
 
-const STEPS = ["Service", "Date and time", "Your details"] as const;
+const STEPS = ["Service", "Date and time", "Details and confirm"] as const;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NO_TIMES: Availability = { date: "", times: [] };
 
 interface Props {
   services: Service[] | null;
@@ -18,6 +20,13 @@ interface Props {
 
 type Errors = Partial<Record<"service" | "date" | "time" | "name" | "email" | "phone", string>>;
 
+/** A mobile number has 7 to 15 digits and only digits, spaces, brackets, dashes and a leading +. */
+function isMobileNumber(value: string): boolean {
+  const trimmed = value.trim();
+  const digits = trimmed.replace(/\D/g, "");
+  return /^\+?[0-9()\s-]+$/.test(trimmed) && digits.length >= 7 && digits.length <= 15;
+}
+
 export function BookingSection({
   services,
   professionals,
@@ -26,7 +35,7 @@ export function BookingSection({
   professionalId,
   onServiceChange,
 }: Props) {
-  const business = useBusiness();
+  const { api, business } = useTenant();
 
   const [step, setStep] = useState(0);
   const [date, setDate] = useState("");
@@ -39,7 +48,11 @@ export function BookingSection({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
-  const availability = useAvailability(serviceId, date || undefined, professionalId);
+  const availability = useAsync<Availability>(
+    (signal) =>
+      serviceId && date ? api.availability(serviceId, date, professionalId, signal) : Promise.resolve(NO_TIMES),
+    [api, serviceId, date, professionalId],
+  );
   const service = services?.find((item) => item.id === serviceId);
   const barber = professionals?.find((item) => item.id === professionalId);
   const today = todayIn(business.timeZone);
@@ -85,13 +98,13 @@ export function BookingSection({
       goNext();
       return;
     }
+
     const found = validate(2);
     setErrors(found);
     if (!serviceId || !date || !time || Object.keys(found).length > 0) return;
 
     setSubmitting(true);
     setSubmitError(null);
-
     try {
       const booked = await api.book({
         serviceId,
@@ -108,8 +121,8 @@ export function BookingSection({
         setSubmitError("That time was just taken. Please choose another time.");
         setTime(undefined);
         setStep(1);
-      } else if (error instanceof ApiError && error.status === 400) {
-        // The server names the field that is wrong, which is more useful than a generic message.
+      } else if (error instanceof ApiError && (error.status === 400 || error.status === 403)) {
+        // The server names what is wrong, or why booking is paused, which is more useful than a generic message.
         setSubmitError(error.message);
       } else {
         setSubmitError("We could not confirm your booking. Please check your details and try again.");
@@ -216,6 +229,8 @@ export function BookingSection({
 
               {step === 1 && (
                 <div className="date-time">
+                  <p className="muted">{barber ? `With ${barber.name}` : "With the first available barber"}</p>
+
                   <div className="field">
                     <label htmlFor="booking-date">Date</label>
                     <input
@@ -301,7 +316,6 @@ export function BookingSection({
                       onChange={(event) => setEmail(event.target.value)}
                     />
                     <FieldError id="err-email" message={errors.email} />
-                    <p className="muted note">We only use your email to send this booking's confirmation.</p>
                   </div>
                   <div className="field">
                     <label htmlFor="customer-phone">Mobile phone</label>
@@ -318,7 +332,7 @@ export function BookingSection({
                       onChange={(event) => setPhone(event.target.value)}
                     />
                     <FieldError id="err-phone" message={errors.phone} />
-                    <p className="muted note">So the shop can reach you about your appointment.</p>
+                    <p className="muted note">We use your email and phone only about this appointment.</p>
                   </div>
                 </div>
               )}
@@ -379,13 +393,6 @@ export function BookingSection({
       </div>
     </section>
   );
-}
-
-/** A mobile number has 7 to 15 digits and only digits, spaces, brackets, dashes and a leading +. */
-function isMobileNumber(value: string): boolean {
-  const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  return /^\+?[0-9()\s-]+$/.test(trimmed) && digits.length >= 7 && digits.length <= 15;
 }
 
 function FieldError({ id, message }: { id: string; message?: string }) {

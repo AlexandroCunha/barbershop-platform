@@ -1,3 +1,4 @@
+import type { NewProfessional, NewService } from "../repositories/types.js";
 import type { ProfessionalPatch, ServicePatch } from "../domain/types.js";
 import { parseMediaNameOrEmpty, parseText } from "../domain/business.js";
 import { AppError } from "../utils/app-error.js";
@@ -19,21 +20,16 @@ function parseInteger(value: unknown, field: string, min: number, max: number): 
   return value;
 }
 
-export function parseServiceId(value: string | undefined): number {
+function parsePositiveId(value: string | undefined, label: string): number {
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError(400, "Service id must be a positive integer");
+    throw new AppError(400, `${label} id must be a positive integer`);
   }
   return id;
 }
 
-export function parseProfessionalId(value: string | undefined): number {
-  const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) {
-    throw new AppError(400, "Professional id must be a positive integer");
-  }
-  return id;
-}
+export const parseServiceId = (value: string | undefined): number => parsePositiveId(value, "Service");
+export const parseProfessionalId = (value: string | undefined): number => parsePositiveId(value, "Professional");
 
 /** Only the fields that are present are validated and returned. */
 export function parseServicePatch(body: unknown): ServicePatch {
@@ -80,4 +76,31 @@ export function parseProfessionalPatch(body: unknown): ProfessionalPatch {
     patch.photo = photo || null;
   }
   return patch;
+}
+
+/** A new service needs a name, a price and a duration. */
+export function parseNewService(body: unknown): NewService {
+  const input = requireObject(body);
+  const name = parseText(input.name, "name", 80);
+  if (!name) throw new AppError(400, "name is required");
+
+  return {
+    name,
+    description: parseText(input.description, "description", 500),
+    priceCents: parseInteger(input.priceCents, "priceCents", 0, 1_000_000),
+    durationMinutes: parseInteger(input.durationMinutes, "durationMinutes", 5, 480),
+  };
+}
+
+/** A new barber needs a name. Specialties, biography and photo can follow. */
+export function parseNewProfessional(body: unknown): NewProfessional {
+  const input = requireObject(body);
+  const name = parseText(input.name, "name", 80);
+  if (!name) throw new AppError(400, "name is required");
+
+  const specialties = Array.isArray(input.specialties)
+    ? input.specialties.map((item) => parseText(item, "specialty", 40)).filter((item) => item.length > 0)
+    : [];
+
+  return { name, specialties: specialties.slice(0, 8), bio: parseText(input.bio, "bio", 600) };
 }

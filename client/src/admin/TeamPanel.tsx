@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, owner } from "../api";
 import { mediaSrc } from "../media";
+import { useTenant } from "../tenant-context";
 import type { MediaItem, Professional } from "../types";
 import { Field, Notice, errorText } from "./ui";
+import { NewBarberForm } from "./NewBarberForm";
 
 export function TeamPanel() {
+  const { api } = useTenant();
   const [people, setPeople] = useState<Professional[] | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -14,17 +16,18 @@ export function TeamPanel() {
       .professionals()
       .then(setPeople)
       .catch((caught: unknown) => setLoadError(errorText(caught)));
-    owner
+    api.owner
       .listMedia()
       .then(setMedia)
       .catch(() => setMedia([]));
-  }, []);
+  }, [api]);
 
   if (loadError) return <Notice kind="error">{loadError}</Notice>;
   if (!people) return <p className="status">Loading barbers…</p>;
 
   return (
     <div className="owner-stack">
+      <NewBarberForm onCreated={(created) => setPeople((current) => [...(current ?? []), created])} />
       {people.map((person) => (
         <BarberCard
           key={person.id}
@@ -48,6 +51,7 @@ function BarberCard({
   media: MediaItem[];
   onSaved: (saved: Professional) => void;
 }) {
+  const { api, slug } = useTenant();
   const [name, setName] = useState(person.name);
   const [specialties, setSpecialties] = useState(person.specialties.join(", "));
   const [bio, setBio] = useState(person.bio);
@@ -60,7 +64,7 @@ function BarberCard({
     setSaving(true);
     setResult(null);
     try {
-      const saved = await owner.updateProfessional(person.id, {
+      const saved = await api.owner.updateProfessional(person.id, {
         name: name.trim(),
         specialties: specialties
           .split(",")
@@ -82,7 +86,7 @@ function BarberCard({
     <form className="owner-card owner-form" onSubmit={handleSave} noValidate>
       <div className="barber-edit">
         <div className="barber-edit-photo">
-          {photo ? <img src={mediaSrc(photo)} alt="" /> : <span aria-hidden="true">{name.charAt(0)}</span>}
+          {photo ? <img src={mediaSrc(slug, photo)} alt="" /> : <span aria-hidden="true">{name.charAt(0)}</span>}
         </div>
         <div className="barber-edit-fields">
           <div className="field-row">

@@ -4,27 +4,14 @@ import type { Request, Response } from "express";
 import { rateLimit } from "../middlewares/rate-limit.js";
 import { AppError } from "../utils/app-error.js";
 
-function fakeRequest(ip: string): Request {
-  return { ip } as Request;
-}
-
-function fakeResponse() {
-  const headers: Record<string, string> = {};
-  return {
-    headers,
-    setHeader: (name: string, value: string) => {
-      headers[name] = value;
-    },
-  };
-}
-
 function run(limiter: ReturnType<typeof rateLimit>, ip: string) {
-  const res = fakeResponse();
+  const headers: Record<string, string> = {};
+  const res = { setHeader: (name: string, value: string) => (headers[name] = value) };
   let outcome: unknown = "passed";
-  limiter(fakeRequest(ip), res as unknown as Response, (error?: unknown) => {
+  limiter({ ip } as Request, res as unknown as Response, (error?: unknown) => {
     outcome = error ?? "passed";
   });
-  return { outcome, headers: res.headers };
+  return { outcome, headers };
 }
 
 test("allows up to the limit, then answers 429 with Retry-After", () => {
@@ -40,18 +27,12 @@ test("allows up to the limit, then answers 429 with Retry-After", () => {
   assert.equal(blocked.headers["Retry-After"], "60");
 });
 
-test("counts each client address separately", () => {
-  const limiter = rateLimit({ windowMs: 60_000, max: 1, message: "slow down", now: () => 0 });
-
-  assert.equal(run(limiter, "1.1.1.1").outcome, "passed");
-  assert.equal(run(limiter, "2.2.2.2").outcome, "passed");
-});
-
-test("opens a fresh window once the old one has passed", () => {
+test("counts each address separately and opens a new window later", () => {
   let current = 0;
   const limiter = rateLimit({ windowMs: 1_000, max: 1, message: "slow down", now: () => current });
 
   assert.equal(run(limiter, "1.1.1.1").outcome, "passed");
+  assert.equal(run(limiter, "2.2.2.2").outcome, "passed");
   assert.ok(run(limiter, "1.1.1.1").outcome instanceof AppError);
 
   current = 1_000;

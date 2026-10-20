@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import type { Booking } from "../domain/types.js";
+import { tenantOf } from "../middlewares/load-tenant.js";
 import type { BookingService } from "../services/booking-service.js";
-import { parseAvailabilityQuery, parseBookingRequest } from "../validations/booking.js";
 import { minutesToTime } from "../utils/time.js";
+import { parseAvailabilityQuery, parseBookingRequest } from "../validations/booking.js";
 
-/** Public shape of a booking. The customer's email is never returned. */
+/** Public shape of a booking. The customer's contact details are never returned. */
 const toBookingResponse = (booking: Booking) => ({
   id: booking.id,
   serviceId: booking.serviceId,
@@ -18,22 +19,22 @@ const toBookingResponse = (booking: Booking) => ({
 export class BookingController {
   constructor(private readonly service: BookingService) {}
 
-  listServices = async (_req: Request, res: Response): Promise<void> => {
-    res.json(await this.service.listServices());
+  listServices = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.service.listServices(tenantOf(req)));
   };
 
-  listProfessionals = async (_req: Request, res: Response): Promise<void> => {
-    res.json(await this.service.listProfessionals());
+  listProfessionals = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.service.listProfessionals(tenantOf(req)));
   };
 
   availability = async (req: Request, res: Response): Promise<void> => {
     const { serviceId, professionalId, date } = parseAvailabilityQuery(req.query);
-    const times = await this.service.availability(serviceId, date, professionalId);
+    const times = await this.service.availability(tenantOf(req), serviceId, date, professionalId);
     res.json({ date, times });
   };
 
   book = async (req: Request, res: Response): Promise<void> => {
-    const booking = await this.service.book(parseBookingRequest(req.body));
+    const booking = await this.service.book(tenantOf(req), parseBookingRequest(req.body));
     res.status(201).json(toBookingResponse(booking));
   };
 }

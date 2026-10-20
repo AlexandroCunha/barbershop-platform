@@ -1,7 +1,7 @@
 import { availableStartMinutes } from "../domain/availability.js";
-import type { Booking, Professional, Service } from "../domain/types.js";
+import { allowsBookings, licenseInfo, type Tenant } from "../domain/tenant.js";
 import { openingHoursFor } from "../domain/opening-hours.js";
-import type { BusinessProvider } from "../content/business-store.js";
+import type { Booking, Professional, Service } from "../domain/types.js";
 import type {
   BookingRepository,
   ProfessionalRepository,
@@ -22,38 +22,39 @@ export interface BookingRequest {
 }
 
 export interface Clock {
+  now(): Date;
   /** Today's date in the given time zone, as YYYY-MM-DD. */
   today(timeZone: string): string;
 }
 
 /**
- * Orchestrates the booking rules. Opening hours and the shop's time zone come
- * from the business settings. It knows nothing about HTTP or SQL.
+ * The booking rules for one barbershop at a time. Each call receives the shop
+ * (tenant), so its hours, time zone and licence are always the right ones.
  */
 export class BookingService {
   constructor(
     private readonly services: ServiceRepository,
     private readonly professionals: ProfessionalRepository,
     private readonly bookings: BookingRepository,
-    private readonly business: BusinessProvider,
     private readonly clock: Clock,
   ) {}
 
-  listServices(): Promise<Service[]> {
-    return this.services.findAll();
+  listServices(tenant: Tenant): Promise<Service[]> {
+    return this.services.findAll(tenant.id);
   }
 
-  listProfessionals(): Promise<Professional[]> {
-    return this.professionals.findAll();
+  listProfessionals(tenant: Tenant): Promise<Professional[]> {
+    return this.professionals.findAll(tenant.id);
   }
 
-  async availability(serviceId: number, date: string, professionalId?: number): Promise<string[]> {
-    const service = await this.requireService(serviceId);
-    await this.assertNotPast(date);
+  async availability(tenant: Tenant, serviceId: number, date: string, professionalId?: number): Promise<string[]> {
+    this.requireBookingsOpen(tenant);
+    const service = await this.requireService(tenant, serviceId);
+    this.assertNotPast(tenant, date);
 
     const starts = new Set<number>();
-    for (const professional of await this.candidates(professionalId)) {
-      for (const start of await this.freeStarts(service, professional.id, date)) {
+    for (const professional of await this.candidates(tenant, professionalId)) {
+      for (const start of await this.freeStarts(tenant, service, professional.id, date)) {
         starts.add(start);
       }
     }
@@ -61,18 +62,19 @@ export class BookingService {
     return [...starts].sort((a, b) => a - b).map(minutesToTime);
   }
 
-  async book(request: BookingRequest): Promise<Booking> {
-    const service = await this.requireService(request.serviceId);
-    await this.assertNotPast(request.date);
+  async book(tenant: Tenant, request: BookingRequest): Promise<Booking> {
+    this.requireBookingsOpen(tenant);
+    const service = await this.requireService(tenant, request.serviceId);
+    this.assertNotPast(tenant, request.date);
 
-    for (const professional of await this.candidates(request.professionalId)) {
-      const starts = await this.freeStarts(service, professional.id, request.date);
+    for (const professional of await this.candidates(tenant, request.professionalId)) {
+      const starts = await this.freeStarts(tenant, service, professional.id, request.date);
       if (!starts.includes(request.startMinute)) {
         continue;
       }
 
       try {
-        return await this.bookings.create({
+        return await this.bookings.create(tenant.id, {
           serviceId: service.id,
           professionalId: professional.id,
           date: request.date,
@@ -94,45 +96,46 @@ export class BookingService {
     throw new AppError(409, "That time is no longer available");
   }
 
-  /** The chosen barber only, or every barber when no preference was given. */
-  private async candidates(professionalId?: number): Promise<Professional[]> {
-    if (professionalId === undefined) {
-      return this.professionals.findAll();
+  private requireBookingsOpen(tenant: Tenant): void {
+    const { state } = licenseInfo(tenant, this.clock.now());
+    if (!allowsBookings(state)) {
+      throw new AppError(403, "Online booking is not available for this barbershop right now. Please call the shop.");
     }
-    return [await this.requireProfessional(professionalId)];
   }
 
-  private async freeStarts(service: Service, professionalId: number, date: string): Promise<number[]> {
-    const business = await this.business.read();
-    const existing = await this.bookings.findByProfessionalAndDate(professionalId, date);
+  /** The chosen barber only, or every barber when no preference was given. */
+  private async candidates(tenant: Tenant, professionalId?: number): Promise<Professional[]> {
+    if (professionalId === undefined) {
+      return this.professionals.findAll(tenant.id);
+    }
+    const professional = await this.professionals.findById(tenant.id, professionalId);
+    if (!professional) {
+      throw new AppError(404, "Professional not found");
+    }
+    return [professional];
+  }
+
+  private async freeStarts(tenant: Tenant, service: Service, professionalId: number, date: string): Promise<number[]> {
+    const existing = await this.bookings.findByProfessionalAndDate(tenant.id, professionalId, date);
 
     return availableStartMinutes({
-      window: openingHoursFor(business.hours, date),
+      window: openingHoursFor(tenant.business.hours, date),
       durationMinutes: service.durationMinutes,
       busy: existing.map(({ startMinute, endMinute }) => ({ startMinute, endMinute })),
     });
   }
 
-  private async requireService(id: number): Promise<Service> {
-    const service = await this.services.findById(id);
+  private async requireService(tenant: Tenant, id: number): Promise<Service> {
+    const service = await this.services.findById(tenant.id, id);
     if (!service) {
       throw new AppError(404, "Service not found");
     }
     return service;
   }
 
-  private async requireProfessional(id: number): Promise<Professional> {
-    const professional = await this.professionals.findById(id);
-    if (!professional) {
-      throw new AppError(404, "Professional not found");
-    }
-    return professional;
-  }
-
-  private async assertNotPast(date: string): Promise<void> {
-    const business = await this.business.read();
+  private assertNotPast(tenant: Tenant, date: string): void {
     // ISO dates compare correctly as strings.
-    if (date < this.clock.today(business.timeZone)) {
+    if (date < this.clock.today(tenant.business.timeZone)) {
       throw new AppError(400, "Date is in the past");
     }
   }

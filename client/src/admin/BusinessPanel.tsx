@@ -1,50 +1,37 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, owner } from "../api";
 import { DAY_LABELS } from "../format";
+import { useTenant } from "../tenant-context";
 import { DAYS, type Business, type Day, type DayHours } from "../types";
 import { Field, Notice, errorText } from "./ui";
 
 type Result = { kind: "ok" | "error"; text: string };
 
 export function BusinessPanel() {
-  const [draft, setDraft] = useState<Business | null>(null);
+  const { api, business: saved } = useTenant();
+  const [draft, setDraft] = useState<Business>(saved);
   const [media, setMedia] = useState<string[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
 
   useEffect(() => {
-    api
-      .business()
-      .then(setDraft)
-      .catch((caught: unknown) => setLoadError(errorText(caught)));
-    owner
+    api.owner
       .listMedia()
       .then((items) => setMedia(items.map((item) => item.name)))
       .catch(() => setMedia([]));
-  }, []);
+  }, [api]);
 
-  if (loadError) {
-    return <Notice kind="error">{loadError}</Notice>;
-  }
-  if (!draft) {
-    return <p className="status">Loading business details…</p>;
-  }
-
-  const update = (patch: Partial<Business>) => setDraft({ ...draft, ...patch });
+  const update = (patch: Partial<Business>) => setDraft((current) => ({ ...current, ...patch }));
   const updateAddress = (patch: Partial<Business["address"]>) =>
-    setDraft({ ...draft, address: { ...draft.address, ...patch } });
+    setDraft((current) => ({ ...current, address: { ...current.address, ...patch } }));
   const updateDay = (day: Day, hours: DayHours | null) =>
-    setDraft({ ...draft, hours: { ...draft.hours, [day]: hours } });
+    setDraft((current) => ({ ...current, hours: { ...current.hours, [day]: hours } }));
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!draft) return;
     setSaving(true);
     setResult(null);
     try {
-      const saved = await owner.saveBusiness(draft);
-      setDraft(saved);
+      setDraft(await api.owner.saveBusiness(draft));
       setResult({ kind: "ok", text: "Saved. The website is up to date." });
     } catch (caught) {
       setResult({ kind: "error", text: errorText(caught) });
@@ -85,21 +72,12 @@ export function BusinessPanel() {
           <Field label="Phone" htmlFor="b-phone">
             <input id="b-phone" value={draft.phone} onChange={(event) => update({ phone: event.target.value })} />
           </Field>
-          <Field label="WhatsApp" htmlFor="b-whatsapp" hint="Number with country code, e.g. +353 1 234 5678.">
-            <input
-              id="b-whatsapp"
-              value={draft.whatsapp}
-              onChange={(event) => update({ whatsapp: event.target.value })}
-            />
+          <Field label="WhatsApp" htmlFor="b-whatsapp" hint="Number with country code.">
+            <input id="b-whatsapp" value={draft.whatsapp} onChange={(event) => update({ whatsapp: event.target.value })} />
           </Field>
         </div>
         <Field label="Email" htmlFor="b-email">
-          <input
-            id="b-email"
-            type="email"
-            value={draft.email}
-            onChange={(event) => update({ email: event.target.value })}
-          />
+          <input id="b-email" type="email" value={draft.email} onChange={(event) => update({ email: event.target.value })} />
         </Field>
         <Field label="Instagram" htmlFor="b-instagram" hint="Your handle without the @.">
           <input
@@ -113,19 +91,11 @@ export function BusinessPanel() {
       <section className="owner-card">
         <h2>Address and directions</h2>
         <Field label="Street" htmlFor="b-street">
-          <input
-            id="b-street"
-            value={draft.address.street}
-            onChange={(event) => updateAddress({ street: event.target.value })}
-          />
+          <input id="b-street" value={draft.address.street} onChange={(event) => updateAddress({ street: event.target.value })} />
         </Field>
         <div className="field-row">
           <Field label="City" htmlFor="b-city">
-            <input
-              id="b-city"
-              value={draft.address.city}
-              onChange={(event) => updateAddress({ city: event.target.value })}
-            />
+            <input id="b-city" value={draft.address.city} onChange={(event) => updateAddress({ city: event.target.value })} />
           </Field>
           <Field label="Postcode" htmlFor="b-postcode">
             <input
@@ -143,12 +113,7 @@ export function BusinessPanel() {
           />
         </Field>
         <Field label="Directions link" htmlFor="b-maps" hint="A Google Maps link that opens directions to the shop.">
-          <input
-            id="b-maps"
-            type="url"
-            value={draft.mapsUrl}
-            onChange={(event) => update({ mapsUrl: event.target.value })}
-          />
+          <input id="b-maps" type="url" value={draft.mapsUrl} onChange={(event) => update({ mapsUrl: event.target.value })} />
         </Field>
       </section>
 
@@ -208,10 +173,10 @@ export function BusinessPanel() {
           </select>
         </Field>
         <div className="field-row">
-          <Field label="Time zone" htmlFor="b-tz" hint="For example Europe/Dublin or Europe/Lisbon.">
+          <Field label="Time zone" htmlFor="b-tz" hint="For example Europe/Dublin or America/Sao_Paulo.">
             <input id="b-tz" value={draft.timeZone} onChange={(event) => update({ timeZone: event.target.value })} />
           </Field>
-          <Field label="Currency" htmlFor="b-currency" hint="Three-letter code, e.g. EUR.">
+          <Field label="Currency" htmlFor="b-currency" hint="Three-letter code, e.g. EUR or BRL.">
             <input
               id="b-currency"
               value={draft.currency}

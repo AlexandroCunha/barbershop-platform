@@ -736,6 +736,7 @@ textarea {
 
 .field {
   display: grid;
+  align-content: start;
   gap: 10px;
   margin-bottom: 24px;
 }
@@ -1615,4 +1616,46 @@ textarea {
 
 .summary dd {
   transition: color 0.3s var(--ease);
+}
+
+/* ==========================================================================
+   Static pages, platform licence rows
+   ========================================================================== */
+.static-page {
+  padding-top: 120px;
+  padding-bottom: 120px;
+}
+
+.static-page h1 {
+  margin-bottom: 20px;
+  font-size: clamp(36px, 5vw, 60px);
+}
+
+.licence-row {
+  display: grid;
+  gap: 16px;
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+}
+
+.licence-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.licence-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.licence-fields .btn {
+  min-height: 46px;
+}
+
+@media (max-width: 760px) {
+  .licence-fields {
+    grid-template-columns: 1fr;
+  }
 }

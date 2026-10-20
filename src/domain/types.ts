@@ -11,7 +11,7 @@ export interface Professional {
   name: string;
   specialties: string[];
   bio: string;
-  /** File name inside media/, or null when no photo is set. */
+  /** File name inside the shop's media folder, or null when no photo is set. */
   photo: string | null;
 }
 

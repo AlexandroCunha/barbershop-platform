@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Barbershop website with online booking, a business profile and an owner area.",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "engines": {
     "node": ">=22"

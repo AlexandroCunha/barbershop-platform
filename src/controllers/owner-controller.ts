@@ -1,52 +1,94 @@
 import type { Request, Response } from "express";
-import { SESSION_COOKIE, SESSION_TTL_SECONDS, type OwnerAuth } from "../auth/owner-auth.js";
+import { OWNER_COOKIE, ownerCookiePath, SESSION_SECONDS } from "../auth/session-config.js";
+import { issueToken } from "../auth/tokens.js";
+import { tenantOf } from "../middlewares/load-tenant.js";
+import type { OwnerAccount } from "../repositories/types.js";
+import type { AccountService } from "../services/account-service.js";
+import type { Clock } from "../services/booking-service.js";
 import { AppError } from "../utils/app-error.js";
+import { buildCookie } from "../utils/cookies.js";
+import { parseLogin, parsePasswordChange } from "../validations/accounts.js";
+import { licenseSummary } from "./summaries.js";
 
-const COOKIE_PATH = "/api/admin";
+interface OwnerControllerOptions {
+  accounts: AccountService;
+  secret: string;
+  secureCookies: boolean;
+  clock: Clock;
+}
 
-/** Signs the owner in with the access token, and out again. */
+/** Owner sign-in, sign-out, session check and password changes for one shop. */
 export class OwnerController {
-  constructor(
-    private readonly auth: OwnerAuth,
-    private readonly secureCookies: boolean,
-  ) {}
+  private readonly accounts: AccountService;
+  private readonly secret: string;
+  private readonly secureCookies: boolean;
+  private readonly clock: Clock;
 
-  login = (req: Request, res: Response): void => {
-    if (!this.auth.isConfigured) {
-      throw new AppError(503, "The owner area is disabled. Set ADMIN_TOKEN in .env to enable it.");
-    }
+  constructor(options: OwnerControllerOptions) {
+    this.accounts = options.accounts;
+    this.secret = options.secret;
+    this.secureCookies = options.secureCookies;
+    this.clock = options.clock;
+  }
 
-    const token = typeof req.body?.token === "string" ? req.body.token : "";
-    if (!this.auth.checkToken(token)) {
-      throw new AppError(401, "Invalid access token");
-    }
+  login = async (req: Request, res: Response): Promise<void> => {
+    const tenant = tenantOf(req);
+    const { email, password } = parseLogin(req.body);
+    const owner = await this.accounts.signInOwner(tenant, email, password);
 
-    res.setHeader("Set-Cookie", this.cookie(this.auth.issueSession(), SESSION_TTL_SECONDS));
+    this.issueSession(res, tenant.slug, owner);
     res.json({ ok: true });
   };
 
-  logout = (_req: Request, res: Response): void => {
-    res.setHeader("Set-Cookie", this.cookie("", 0));
+  logout = (req: Request, res: Response): void => {
+    const tenant = tenantOf(req);
+    res.setHeader(
+      "Set-Cookie",
+      buildCookie(OWNER_COOKIE, "", { path: ownerCookiePath(tenant.slug), maxAgeSeconds: 0, secure: this.secureCookies }),
+    );
     res.status(204).end();
   };
 
-  /** Only reached through requireOwner, so a response here means the session is valid. */
-  session = (_req: Request, res: Response): void => {
+  /** Reached only through requireOwner, so a response here means the session is valid. */
+  session = (req: Request, res: Response): void => {
+    const tenant = tenantOf(req);
+    res.json({ ok: true, license: licenseSummary(tenant, this.clock.now()) });
+  };
+
+  changePassword = async (req: Request, res: Response): Promise<void> => {
+    const tenant = tenantOf(req);
+    const owner = ownerOf(req);
+    const { current, next } = parsePasswordChange(req.body);
+
+    const sessionVersion = await this.accounts.changeOwnerPassword(owner, current, next);
+    // Other sessions are now stale. Issue a fresh one for this browser so it stays signed in.
+    this.issueSession(res, tenant.slug, { ...owner, sessionVersion });
     res.json({ ok: true });
   };
 
-  /** HttpOnly keeps the session away from scripts; SameSite=Strict stops cross-site requests from carrying it. */
-  private cookie(value: string, maxAge: number): string {
-    const attributes = [
-      `${SESSION_COOKIE}=${value}`,
-      `Path=${COOKIE_PATH}`,
-      "HttpOnly",
-      "SameSite=Strict",
-      `Max-Age=${maxAge}`,
-    ];
-    if (this.secureCookies) {
-      attributes.push("Secure");
-    }
-    return attributes.join("; ");
+  private issueSession(res: Response, slug: string, owner: Pick<OwnerAccount, "id" | "tenantId" | "sessionVersion">): void {
+    const expiresAt = Math.floor(this.clock.now().getTime() / 1000) + SESSION_SECONDS;
+    const token = issueToken(this.secret, {
+      kind: "owner",
+      exp: expiresAt,
+      tenantId: owner.tenantId,
+      ownerId: owner.id,
+      version: owner.sessionVersion,
+    });
+    res.setHeader(
+      "Set-Cookie",
+      buildCookie(OWNER_COOKIE, token, {
+        path: ownerCookiePath(slug),
+        maxAgeSeconds: SESSION_SECONDS,
+        secure: this.secureCookies,
+      }),
+    );
   }
+}
+
+function ownerOf(req: Request): OwnerAccount {
+  if (!req.owner) {
+    throw new AppError(401, "Please sign in to continue");
+  }
+  return req.owner;
 }

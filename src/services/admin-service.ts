@@ -1,43 +1,63 @@
-import type { BusinessStore } from "../content/business-store.js";
+import path from "node:path";
 import { parseBusiness, type Business } from "../domain/business.js";
 import type { Professional, ProfessionalPatch, Service, ServicePatch } from "../domain/types.js";
-import type { MediaStore } from "../media/media-store.js";
-import type { ProfessionalRepository, ServiceRepository } from "../repositories/types.js";
+import type { Tenant } from "../domain/tenant.js";
+import { MediaStore } from "../media/media-store.js";
+import type {
+  NewProfessional,
+  NewService,
+  ProfessionalRepository,
+  ServiceRepository,
+  TenantRepository,
+} from "../repositories/types.js";
 import { AppError } from "../utils/app-error.js";
 
-/** Use cases behind the owner's area. */
+/** What an owner may change about their own shop. */
 export class AdminService {
   constructor(
-    private readonly business: BusinessStore,
-    private readonly media: MediaStore,
+    private readonly tenants: TenantRepository,
+    private readonly mediaRoot: string,
     private readonly services: ServiceRepository,
     private readonly professionals: ProfessionalRepository,
   ) {}
 
-  async saveBusiness(input: unknown): Promise<Business> {
+  async saveBusiness(tenant: Tenant, input: unknown): Promise<Business> {
     const business = parseBusiness(input);
-    await this.business.write(business);
+    await this.tenants.updateBusiness(tenant.id, business);
     return business;
   }
 
-  listMedia(): Promise<string[]> {
-    return this.media.list();
+  private mediaFor(tenant: Tenant): MediaStore {
+    // Each shop's photos live in their own folder, named after its address.
+    return new MediaStore(path.join(this.mediaRoot, tenant.slug));
   }
 
-  uploadMedia(originalName: string, contentType: string, data: Buffer): Promise<string> {
-    return this.media.save(originalName, contentType, data);
+  listMedia(tenant: Tenant): Promise<string[]> {
+    return this.mediaFor(tenant).list();
   }
 
-  async updateService(id: number, patch: ServicePatch): Promise<Service> {
-    const service = await this.services.update(id, patch);
+  uploadMedia(tenant: Tenant, originalName: string, contentType: string, data: Buffer): Promise<string> {
+    return this.mediaFor(tenant).save(originalName, contentType, data);
+  }
+
+  createService(tenant: Tenant, input: NewService): Promise<Service> {
+    return this.services.create(tenant.id, input);
+  }
+
+  createProfessional(tenant: Tenant, input: NewProfessional): Promise<Professional> {
+    return this.professionals.create(tenant.id, input);
+  }
+
+  async updateService(tenant: Tenant, id: number, patch: ServicePatch): Promise<Service> {
+    const service = await this.services.update(tenant.id, id, patch);
     if (!service) {
       throw new AppError(404, "Service not found");
     }
     return service;
   }
 
-  async updateProfessional(id: number, patch: ProfessionalPatch): Promise<Professional> {
-    const professional = await this.professionals.update(id, patch);
+  async updateProfessional(tenant: Tenant, id: number, patch: ProfessionalPatch): Promise<Professional> {
+    const professional = await this.professionals.update(tenant.id, id, patch);
     if (!professional) {
       throw new AppError(404, "Professional not found");
     }

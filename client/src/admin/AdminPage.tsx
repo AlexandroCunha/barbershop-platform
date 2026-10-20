@@ -1,12 +1,16 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ApiError, OWNER_SESSION_EXPIRED, owner } from "../api";
+import { ApiError, OWNER_SESSION_EXPIRED, type TenantApi } from "../api";
+import { useTenant } from "../tenant-context";
+import type { LicenseSummary } from "../types";
+import { AccountPanel } from "./AccountPanel";
 import { BusinessPanel } from "./BusinessPanel";
 import { MediaPanel } from "./MediaPanel";
 import { ServicesPanel } from "./ServicesPanel";
 import { TeamPanel } from "./TeamPanel";
 import { Field, errorText } from "./ui";
+import { formatDate } from "../format";
 
-type Tab = "business" | "media" | "team" | "services";
+type Tab = "business" | "media" | "team" | "services" | "account";
 type Status = "checking" | "signed-out" | "signed-in";
 
 const TABS: { id: Tab; label: string }[] = [
@@ -14,20 +18,24 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "media", label: "Photos" },
   { id: "team", label: "Barbers" },
   { id: "services", label: "Services" },
+  { id: "account", label: "Account" },
 ];
 
-/** The owner's area: business profile, photos, barbers and services. */
+/** A barbershop's owner area: its details, photos, barbers, services and account. */
 export function AdminPage() {
+  const { api, slug, business } = useTenant();
   const [status, setStatus] = useState<Status>("checking");
+  const [license, setLicense] = useState<LicenseSummary | null>(null);
   const [tab, setTab] = useState<Tab>("business");
 
-  // Ask the server whether this browser already has a live session.
   useEffect(() => {
     let active = true;
-    owner
+    api.owner
       .session()
-      .then(() => {
-        if (active) setStatus("signed-in");
+      .then((session) => {
+        if (!active) return;
+        setLicense(session.license);
+        setStatus("signed-in");
       })
       .catch(() => {
         if (active) setStatus("signed-out");
@@ -39,18 +47,26 @@ export function AdminPage() {
       active = false;
       window.removeEventListener(OWNER_SESSION_EXPIRED, expired);
     };
-  }, []);
+  }, [api]);
 
   if (status === "checking") {
     return <p className="status page-status">Loading…</p>;
   }
-
   if (status === "signed-out") {
-    return <LoginPanel onSignedIn={() => setStatus("signed-in")} />;
+    return (
+      <LoginPanel
+        api={api}
+        shopName={business.name}
+        onSignedIn={(summary) => {
+          setLicense(summary);
+          setStatus("signed-in");
+        }}
+      />
+    );
   }
 
   async function signOut() {
-    await owner.logout().catch(() => undefined);
+    await api.owner.logout().catch(() => undefined);
     setStatus("signed-out");
   }
 
@@ -58,9 +74,9 @@ export function AdminPage() {
     <div className="owner">
       <header className="owner-top">
         <div className="container owner-top-inner">
-          <span className="owner-title">Owner area</span>
+          <span className="owner-title">{business.name} · Owner area</span>
           <div className="owner-actions">
-            <a href="/">View site</a>
+            <a href={`/${slug}`}>View site</a>
             <button type="button" className="link-button" onClick={signOut}>
               Sign out
             </button>
@@ -81,74 +97,111 @@ export function AdminPage() {
       </header>
 
       <main className="container owner-main">
+        {license && <LicenseNotice license={license} />}
         {tab === "business" && <BusinessPanel />}
         {tab === "media" && <MediaPanel />}
         {tab === "team" && <TeamPanel />}
         {tab === "services" && <ServicesPanel />}
+        {tab === "account" && <AccountPanel />}
       </main>
     </div>
   );
 }
 
-function LoginPanel({ onSignedIn }: { onSignedIn: () => void }) {
-  const [value, setValue] = useState("");
+/** Tells the owner whether online booking is running, and until when. */
+function LicenseNotice({ license }: { license: LicenseSummary }) {
+  const until = license.endsAt ? formatDate(license.endsAt.slice(0, 10)) : null;
+
+  switch (license.state) {
+    case "trial":
+      return <p className="notice notice-ok">Free trial: online booking is open until {until}.</p>;
+    case "active":
+      return (
+        <p className="notice notice-ok">
+          Subscription active{until ? ` until ${until}` : ""}. Online booking is open.
+        </p>
+      );
+    case "expired":
+      return (
+        <p className="notice notice-error" role="status">
+          Online booking is paused because the subscription has ended. Your details stay safe; renew to reopen bookings.
+        </p>
+      );
+    case "suspended":
+      return (
+        <p className="notice notice-error" role="status">
+          Online booking is paused for this account. Contact the platform owner for help.
+        </p>
+      );
+  }
+}
+
+function LoginPanel({
+  api,
+  shopName,
+  onSignedIn,
+}: {
+  api: TenantApi;
+  shopName: string;
+  onSignedIn: (license: LicenseSummary) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const token = value.trim();
-    if (!token) {
-      setError("Enter your access token.");
+    if (!email.trim() || !password) {
+      setError("Enter your email and password.");
       return;
     }
 
-    setChecking(true);
+    setBusy(true);
     setError(null);
     try {
-      await owner.login(token);
-      setValue("");
-      onSignedIn();
+      await api.owner.login(email.trim(), password);
+      const session = await api.owner.session();
+      setPassword("");
+      onSignedIn(session.license);
     } catch (caught) {
-      const message =
-        caught instanceof ApiError && caught.status === 401
-          ? "That access token is not correct."
-          : errorText(caught);
-      setError(message);
+      setError(caught instanceof ApiError && caught.status === 401 ? "Email or password is not correct." : errorText(caught));
     } finally {
-      setChecking(false);
+      setBusy(false);
     }
   }
 
   return (
     <div className="owner owner-login">
       <form className="login-card" onSubmit={handleSubmit} noValidate>
-        <p className="eyebrow">Owner area</p>
+        <p className="eyebrow">{shopName} · Owner area</p>
         <h1>Sign in</h1>
-        <p className="muted">Enter the access token from the server's .env file (ADMIN_TOKEN).</p>
-
-        <Field label="Access token" htmlFor="owner-token">
+        <Field label="Email" htmlFor="owner-email">
           <input
-            id="owner-token"
-            type="password"
-            autoComplete="current-password"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
+            id="owner-email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
           />
         </Field>
-
+        <Field label="Password" htmlFor="owner-password">
+          <input
+            id="owner-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+        </Field>
         {error && (
           <p className="notice notice-error" role="alert">
             {error}
           </p>
         )}
-
-        <button type="submit" className="btn btn-dark" disabled={checking}>
-          {checking ? "Checking…" : "Sign in"}
+        <button type="submit" className="btn btn-dark" disabled={busy}>
+          {busy ? "Checking…" : "Sign in"}
         </button>
-        <a className="link-arrow" href="/">
-          Back to the website
-        </a>
       </form>
     </div>
   );

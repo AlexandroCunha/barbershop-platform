@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from "react";
-import { owner } from "../api";
+import { useTenant } from "../tenant-context";
 import type { MediaItem } from "../types";
 import { Notice, errorText } from "./ui";
 
@@ -9,16 +9,17 @@ const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
 type Result = { kind: "ok" | "error"; text: string };
 
 export function MediaPanel() {
+  const { api } = useTenant();
   const [items, setItems] = useState<MediaItem[] | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
 
   useEffect(() => {
-    owner
+    api.owner
       .listMedia()
       .then(setItems)
       .catch((caught: unknown) => setResult({ kind: "error", text: errorText(caught) }));
-  }, []);
+  }, [api]);
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -37,7 +38,7 @@ export function MediaPanel() {
     setUploading(true);
     setResult(null);
     try {
-      const uploaded = await owner.uploadMedia(file);
+      const uploaded = await api.owner.uploadMedia(file);
       setItems((current) => [...(current ?? []), uploaded].sort((a, b) => a.name.localeCompare(b.name)));
       setResult({ kind: "ok", text: `Uploaded ${uploaded.name}.` });
     } catch (caught) {
@@ -52,8 +53,7 @@ export function MediaPanel() {
       <section className="owner-card">
         <h2>Add a photo</h2>
         <p className="muted">
-          JPG, PNG or WebP, up to 8 MB. Landscape photos suit the hero; portraits (4:5) suit the barbers. The name
-          you see below is the file name the site uses.
+          JPG, PNG or WebP, up to 8 MB. Landscape photos suit the hero; portraits (4:5) suit the barbers.
         </p>
         <label className={`upload${uploading ? " is-busy" : ""}`}>
           <input type="file" accept={ACCEPTED.join(",")} onChange={handleUpload} disabled={uploading} />
@@ -65,9 +65,7 @@ export function MediaPanel() {
       <section className="owner-card">
         <h2>Your photos</h2>
         {!items && <p className="status">Loading photos…</p>}
-        {items && items.length === 0 && (
-          <p className="muted">No photos yet. You can also copy files into the media folder on the server.</p>
-        )}
+        {items && items.length === 0 && <p className="muted">No photos yet.</p>}
         {items && items.length > 0 && (
           <ul className="media-grid">
             {items.map((item) => (

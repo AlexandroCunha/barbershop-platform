@@ -14,3 +14,24 @@ export function parseCookies(header: string | undefined): Record<string, string>
   }
   return cookies;
 }
+
+export interface CookieOptions {
+  path: string;
+  maxAgeSeconds: number;
+  secure: boolean;
+}
+
+/** HttpOnly keeps the value away from page scripts; SameSite=Strict stops other sites from sending it. */
+export function buildCookie(name: string, value: string, options: CookieOptions): string {
+  const attributes = [
+    `${name}=${value}`,
+    `Path=${options.path}`,
+    "HttpOnly",
+    "SameSite=Strict",
+    `Max-Age=${options.maxAgeSeconds}`,
+  ];
+  if (options.secure) {
+    attributes.push("Secure");
+  }
+  return attributes.join("; ");
+}
