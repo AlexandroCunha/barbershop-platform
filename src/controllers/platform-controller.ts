@@ -29,7 +29,7 @@ export class PlatformController {
   login = (req: Request, res: Response): void => {
     const { platformToken, platformKey, secureCookies, clock } = this.options;
     if (platformToken === undefined || platformKey === undefined) {
-      throw new AppError(503, "The platform area is disabled. Set PLATFORM_ADMIN_TOKEN in .env to enable it.");
+      throw new AppError(503, "The platform area is not available.");
     }
 
     const given = typeof req.body?.token === "string" ? req.body.token : "";

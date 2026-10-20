@@ -85,7 +85,7 @@ app.listen(config.port, () => {
   console.log(`Barbearia running at http://localhost:${config.port}`);
   console.log(
     config.platformToken === undefined
-      ? "Platform area disabled: set PLATFORM_ADMIN_TOKEN in .env"
+      ? "Platform area disabled: PLATFORM_ADMIN_TOKEN is not set"
       : "Platform area: /platform",
   );
 });

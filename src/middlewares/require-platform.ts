@@ -11,7 +11,7 @@ import { parseCookies } from "../utils/cookies.js";
 export function requirePlatform(platformKey: string | undefined): RequestHandler {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (platformKey === undefined) {
-      next(new AppError(503, "The platform area is disabled. Set PLATFORM_ADMIN_TOKEN in .env to enable it."));
+      next(new AppError(503, "The platform area is not available."));
       return;
     }
 

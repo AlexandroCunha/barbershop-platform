@@ -50,7 +50,7 @@ function PlatformLogin({ onSignedIn }: { onSignedIn: () => void }) {
       <form className="login-card" onSubmit={handleSubmit} noValidate>
         <p className="eyebrow">Platform</p>
         <h1>Sign in</h1>
-        <p className="muted">Enter PLATFORM_ADMIN_TOKEN from the server's .env file.</p>
+        <p className="muted">Enter your platform access token.</p>
         <Field label="Platform token" htmlFor="platform-token">
           <input
             id="platform-token"
