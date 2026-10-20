@@ -1,60 +1,161 @@
-# Barbearia
+<div align="center">
 
-Online booking software for barbershops. Each barbershop gets its own address, a public
-website with services, barbers, opening hours and a booking flow, and an owner area to keep
-everything up to date. One installation serves many barbershops (multi-tenant SaaS), and the
-platform owner controls each shop's license from a separate area.
+# ✂️ Barbearia
 
-> Sample content in the screenshots (names, prices, address, phone) is invented for the demo.
+**Online booking for barbershops, made simple.**
 
-## Screenshots
+Every barbershop gets its own address, a beautiful website, a booking calendar and an owner area
+to keep everything up to date. One installation serves many shops.
 
-| Website | Booking |
+[![CI](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml)
+![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![License](https://img.shields.io/badge/license-proprietary-lightgrey)
+
+**🇬🇧 English** · [🇧🇷 Português](README.pt-BR.md)
+
+</div>
+
+> 🧪 All names, prices, addresses and phone numbers in the screenshots are invented for the demo.
+
+---
+
+## 👀 Take a look
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/01-website-hero.png" alt="The barbershop website: hero section"><br>
+      <sub><b>The website</b>: a first impression that fits the shop</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/02-barbers-and-services-menu.png" alt="Barbers and the services menu"><br>
+      <sub><b>Barbers and services</b>: pick a barber and a service side by side</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/03-booking-date-and-time.png" alt="Choosing a date and time"><br>
+      <sub><b>Booking</b>: choose a day and a free time</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/04-booking-details-and-summary.png" alt="Customer details and booking summary"><br>
+      <sub><b>Confirm</b>: a live summary of the appointment</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/05-mobile-hero.png" alt="Mobile view of the website"><br>
+      <sub><b>Mobile first</b>: it looks great on a phone</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/07-owner-area-business.png" alt="Owner area: business details"><br>
+      <sub><b>Owner area</b>: the owner edits everything without touching code</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/08-owner-area-services.png" alt="Owner area: services"><br>
+      <sub><b>Services</b>: prices, durations and descriptions</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/09-platform-barbershops.png" alt="Platform area: barbershops and licenses"><br>
+      <sub><b>Platform owner</b>: every shop and its license in one place</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## ✨ What you get
+
+<table>
+  <tr>
+    <td valign="top" width="33%">
+
+### 💈 Customers
+- Pick a service, a day and a time
+- Choose a barber, or let us find the first free one
+- A live summary with price and duration
+- Smooth on phones, with the booking button always in reach
+
+</td>
+    <td valign="top" width="33%">
+
+### 🧑‍💼 Owners
+- Business profile: name, slogan, contacts, address, hours
+- Upload photos and pick a hero image and barber portraits
+- Add, rename, reprice and remove barbers and services
+- Change your password; other devices sign out
+- See at a glance whether online booking is open
+
+</td>
+    <td valign="top" width="33%">
+
+### 🏢 Platform owner
+- Create a barbershop in one form (14-day trial included)
+- Set each shop's license: trial, active or suspended
+- Set trial end and paid-until dates
+
+</td>
+  </tr>
+</table>
+
+---
+
+## 🚀 Quick start
+
+You need **Node.js 22** and **Docker** (or any PostgreSQL 17 server).
+
+```bash
+npm install
+docker compose up -d            # PostgreSQL on port 5434
+cp .env.example .env            # then fill in the two secrets below
+npm run db:migrate
+npm run build
+npm start                       # http://localhost:3100
+```
+
+Create the two secrets:
+
+```bash
+openssl rand -hex 32            # SESSION_SECRET
+openssl rand -hex 24            # PLATFORM_ADMIN_TOKEN
+```
+
+Then open **`http://localhost:3100/platform`**, sign in with `PLATFORM_ADMIN_TOKEN`, and add your first
+barbershop. Its website lives at `/<address>` and its owner area at `/<address>/admin`. 🎉
+
+> 💡 For development, run `npm run dev:api` and `npm run dev:web` in two terminals.
+
+| Command | What it does |
 | --- | --- |
-| ![Website hero](docs/screenshots/01-website-hero.png) | ![Barbers and services menu](docs/screenshots/02-barbers-and-services-menu.png) |
-| ![Choosing a date and time](docs/screenshots/03-booking-date-and-time.png) | ![Details and summary](docs/screenshots/04-booking-details-and-summary.png) |
+| `npm test` | Builds the server and runs the unit tests |
+| `npm run simulate` | Runs an end-to-end simulation with ten agents (see [Testing](#-testing--ci)) |
+| `npm run typecheck` | Type-checks the server and the website |
+| `npm run build` | Builds the server and the website |
 
-| Mobile | Owner area |
-| --- | --- |
-| ![Mobile hero](docs/screenshots/05-mobile-hero.png) | ![Owner area: business details](docs/screenshots/07-owner-area-business.png) |
+---
 
-| Owner: services | Platform owner |
-| --- | --- |
-| ![Owner area: services](docs/screenshots/08-owner-area-services.png) | ![Platform: barbershops and licenses](docs/screenshots/09-platform-barbershops.png) |
+## 🧭 How it works
 
-## Features
-
-**Customers**
-- Choose a service, a date and a time. Barbers' availability is respected; a barber can be chosen, or the first free barber is assigned.
-- Live booking summary with price, duration and barber.
-- Mobile-friendly layout with a booking button that stays in reach.
-
-**Barbershop owners** (`/<shop>/admin`)
-- Business profile: name, slogan, about, contact details, address, opening hours, time zone and currency.
-- Photos: upload JPG, PNG or WebP files, then choose a hero image and barber portraits.
-- Barbers and services: add, rename, set prices and durations, and remove. Removed items keep their past bookings.
-- Account: change password (other sessions are signed out).
-- License notice: shows whether online booking is open and until when.
-
-**Platform owner** (`/platform`)
-- Create barbershops (name, address, owner login). Each one starts with a 14-day trial.
-- Set each shop's license status (trial, active or suspended), trial end and paid-until date.
-
-## Architecture
+Each barbershop is a **tenant** with its own address (`/northgate`). Its services, barbers,
+bookings, owner accounts and photos never mix with another shop's data.
 
 ```mermaid
 flowchart LR
   subgraph Browser
-    Site["Customer website<br/>/:shop"]
-    Owner["Owner area<br/>/:shop/admin"]
-    Platform["Platform area<br/>/platform"]
+    Site["🌐 Customer website<br/>/:shop"]
+    Owner["🧑‍💼 Owner area<br/>/:shop/admin"]
+    Platform["🏢 Platform area<br/>/platform"]
   end
 
   Browser -->|HTTPS| API
 
   subgraph Server["Node.js 22 · Express 5"]
     API["/api routes"]
-    MW["Middlewares<br/>tenant lookup · owner / platform session<br/>rate limits · security headers"]
+    MW["Middlewares<br/>shop lookup · sessions · rate limits · headers"]
     CTRL["Controllers<br/>HTTP in and out"]
     SVC["Services<br/>booking rules · license checks · account rules"]
     REPO["Repositories<br/>SQL, always filtered by tenant"]
@@ -68,18 +169,11 @@ flowchart LR
   Server -->|serves| Media["media/&lt;shop&gt;/<br/>one folder per shop"]
 ```
 
-**Layers.** Routes only wire URLs to handlers. Middlewares resolve the shop (`:slug`), check the
-owner or platform session and apply rate limits. Controllers translate HTTP into calls and back.
-Services hold the rules (for example: a shop with an expired license cannot take bookings).
-Repositories are the only code that writes SQL, and every query filters by `tenant_id`.
-Domain modules are pure functions and types with no I/O, which keeps them easy to test.
+**In short:** routes wire URLs to handlers, middlewares check who you are, controllers translate HTTP,
+services hold the rules, and repositories are the only code that talks SQL. Every query filters by
+`tenant_id`, so one shop can never see another's data.
 
-### Multi-tenancy
-
-Each barbershop is a **tenant** identified by its address (`/northgate`). All its rows
-(services, barbers, bookings, owner accounts, photos) belong to one tenant. Requests for one
-shop can never read or change another shop's rows, and owner sessions are bound to a single
-shop: a session issued for one shop is rejected by every other shop's API.
+### 🗂️ Data model
 
 ```mermaid
 erDiagram
@@ -107,7 +201,7 @@ erDiagram
   }
 ```
 
-### Request flow: a booking
+### 📅 A booking, step by step
 
 ```mermaid
 sequenceDiagram
@@ -128,38 +222,31 @@ sequenceDiagram
   A-->>C: 201 with date, time and reference
 ```
 
-### Licenses
+### 🎟️ Licenses
 
-A shop's license decides whether customers can book. The owner area always stays open, so the
-owner can see the reason and fix their account.
+A shop's license decides whether customers can book. The owner area always stays open, so the owner
+can see the reason and fix it.
 
 | Status set by the platform owner | Customers can book? | What the owner sees |
-| --- | --- | --- |
-| `trial`, before the trial end | Yes | "Free trial: online booking is open until …" |
-| `active`, paid until a future date, or with no end date | Yes | "Subscription active …" |
-| `trial` or `active` whose period has ended | No | "Online booking is paused because the subscription has ended." |
-| `suspended` | No | "Online booking is paused for this account." |
+| --- | :---: | --- |
+| `trial`, before the trial ends | ✅ | "Free trial: online booking is open until …" |
+| `active`, paid until a future date, or with no end date | ✅ | "Subscription active …" |
+| `trial` or `active` whose period has ended | ⛔ | "Online booking is paused because the subscription has ended." |
+| `suspended` | ⛔ | "Online booking is paused for this account." |
 
-The platform owner changes these in `/platform`. A payment provider would set `paid_until` when a
-subscription is paid (see the roadmap).
+### 🔐 Security
 
-### Security
+- 🍪 **Sessions** are signed tokens (HMAC-SHA256) in `HttpOnly`, `SameSite=Strict` cookies, valid for 8 hours. The browser never keeps a reusable token.
+- 🔑 **Passwords** are hashed with scrypt and a per-password salt. Unknown emails take as long to reject as real ones, so timing reveals nothing.
+- 🚪 **Password changes** sign out every other session.
+- 🚦 **Rate limits:** sign-in (10 attempts per 15 minutes) and booking (30 per 10 minutes), per address.
+- 🖼️ **Uploads** are checked against the image's signature bytes, renamed on arrival, and never overwrite a photo. JPG, PNG and WebP only, up to 8 MB.
+- 🛡️ **Headers:** Content-Security-Policy, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and HSTS when cookies are secure.
+- ✅ **Inputs** are validated on every endpoint, and SQL is always parameterised.
 
-- **Owner and platform sessions** are signed tokens (HMAC-SHA256) in `HttpOnly`,
-  `SameSite=Strict` cookies, valid for 8 hours. The browser never stores the owner's password or a
-  reusable token.
-- **Passwords** are hashed with scrypt and a per-password salt. Unknown emails take as long to
-  reject as known ones, so timing does not reveal which emails have accounts.
-- **Password changes** bump a session version, which signs out every other session.
-- **Rate limits** apply to sign-in (10 attempts per 15 minutes per address) and booking
-  (30 per 10 minutes per address).
-- **Uploads** are checked against the image's signature bytes, renamed on arrival and never
-  overwrite an existing photo. Only JPG, PNG and WebP are accepted, up to 8 MB.
-- **HTTP headers:** Content-Security-Policy, `X-Content-Type-Options`, `X-Frame-Options`,
-  `Referrer-Policy`, `Permissions-Policy`, and HSTS when cookies are secure.
-- **Input validation** happens on every endpoint; SQL is always parameterised.
+---
 
-## Project layout
+## 🗺️ Project layout
 
 ```
 src/
@@ -179,92 +266,86 @@ client/src/
   components/               website sections (hero, barbers, services, booking, visit, footer)
   admin/                    owner area: business, photos, barbers, services, account
 db/migrations/              schema, applied once each and recorded in schema_migrations
+scripts/                    end-to-end simulation
 docs/                       screenshots and legal templates
 media/<shop>/               each shop's photos (not committed)
 ```
 
-## Running it locally
+---
 
-Requirements: Node.js 22 and Docker (or any PostgreSQL 17 server).
+## ⚙️ Configuration
 
-```bash
-npm install
-docker compose up -d                 # PostgreSQL on port 5434
-cp .env.example .env                 # then fill in the secrets below
-npm run db:migrate
-npm run build
-npm start                            # http://localhost:3100
-```
+| Variable | Required | What it does |
+| --- | :---: | --- |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `SESSION_SECRET` | ✅ (32+ chars) | Signs owner and platform sessions. Changing it signs everyone out |
+| `PLATFORM_ADMIN_TOKEN` | for `/platform` (24+ chars) | The platform owner's sign-in token |
+| `PORT` | | Port for the site and API. Default `3100` |
+| `COOKIE_SECURE` | | Send cookies only over HTTPS. On by default in production |
+| `TRUST_PROXY` | | Set to `true` behind a reverse proxy that sets `X-Forwarded-For` |
+| `BOOKING_RATE_LIMIT` | | Booking requests allowed per address in 10 minutes. Default `30` |
 
-Generate the secrets:
+---
 
-```bash
-openssl rand -hex 32    # SESSION_SECRET
-openssl rand -hex 24    # PLATFORM_ADMIN_TOKEN
-```
+## 🧪 Testing & CI
 
-Then open `http://localhost:3100/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, and add the first
-barbershop. Its website is at `/<address>` and its owner area at `/<address>/admin`.
+- ✅ **`npm test`**: 53 unit tests covering availability, cross-shop booking rules, license states,
+  password hashing, signed tokens, rate limits, uploads, slugs and input validation.
+- 🤖 **`npm run simulate`**: an end-to-end run with ten agents (one owner, three new barbers, six
+  customers) hitting the same slot at the same time, removing items, trying overlaps, suspending a
+  shop and changing passwords. Start the server with a higher limit first:
+  `BOOKING_RATE_LIMIT=500 npm start`. It also needs `psql` on the PATH, or `PSQL` set to its path.
+- 🔁 **GitHub Actions** builds and tests every push and pull request.
 
-For development run `npm run dev:api` and `npm run dev:web` in two terminals.
+---
 
-| Command | What it does |
-| --- | --- |
-| `npm test` | Builds the server and runs the unit tests. |
-| `npm run typecheck` | Type-checks the server and the client. |
-| `npm run build` | Builds the server and the website. |
+## 💼 Business model and licensing
 
-## Configuration
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. |
-| `SESSION_SECRET` | yes, 32+ characters | Signs owner and platform sessions. Changing it signs everyone out. |
-| `PLATFORM_ADMIN_TOKEN` | to use `/platform`, 24+ characters | The platform owner's sign-in token. |
-| `PORT` | no, default 3100 | Port for the site and API. |
-| `COOKIE_SECURE` | no | Send cookies only over HTTPS. On by default in production. |
-| `TRUST_PROXY` | no | Set to `true` behind a reverse proxy that sets `X-Forwarded-For`. |
-
-## Business model and licensing
-
-Barbershops pay a monthly or yearly **subscription** to use the hosted service. The code stays
-with its owner. Customers receive a license to use the service, not the software. The usual
-choices and what this project does about each:
+Barbershops pay a **subscription** to use the hosted service. The code stays with its owner, and
+customers receive a license to use the service, not the software.
 
 | Model | Who runs it | Fit for this product |
 | --- | --- | --- |
-| **Hosted subscription (SaaS)**, one install for many shops | You | Recommended. Recurring revenue, updates in one place, no installs for the customer. Implemented: multi-tenancy, trials, license states, platform area. |
-| **Self-hosted license** (license key or annual fee), the shop runs its own copy | The customer | Possible later for shops that insist on their own server. Needs a license key check and support. Not implemented. |
-| **Open source** with a commercial add-on | Anyone | Not recommended if the goal is to sell this product; others can copy it. |
+| ☁️ **Hosted subscription (SaaS)**, one install for many shops | You | **Recommended.** Recurring revenue, one place to update. Implemented: multi-tenancy, trials, license states, platform area. |
+| 🏠 **Self-hosted license** (license key or annual fee) | The customer | Possible later for shops that want their own server. Not implemented. |
+| 🌍 **Open source** with a paid add-on | Anyone | Not recommended if the goal is to sell this product. |
 
-The project is **proprietary**. [`LICENSE`](LICENSE) says who owns the code, what customers may do and what they
-may not. The customer agreement lives in [`docs/legal/terms-of-service.md`](docs/legal/terms-of-service.md) and the
-privacy policy in [`docs/legal/privacy-policy.md`](docs/legal/privacy-policy.md).
-These are templates; have a lawyer adapt them before you sell.
+The project is **proprietary**. [`LICENSE`](LICENSE) explains who owns the code and what customers may
+and may not do. The customer agreement and privacy policy are in
+[`docs/legal/terms-of-service.md`](docs/legal/terms-of-service.md) and
+[`docs/legal/privacy-policy.md`](docs/legal/privacy-policy.md). They are templates, so have a lawyer
+adapt them before you sell.
 
-**Roadmap for billing.** Connect a payment provider (for example Stripe, Mercado Pago or Paddle) so that
-a successful payment sets `paid_until` and a failed or cancelled one moves the shop to `suspended`.
-Until then the platform owner sets licenses by hand in `/platform`.
+---
 
-## Testing and CI
+## 🛣️ Roadmap
 
-- `npm run simulate` runs an end-to-end simulation with ten agents (one owner, three new barbers, six customers): concurrent bookings for the same slot, removals, overlaps, suspension and password changes. It needs the server running, with `BOOKING_RATE_LIMIT` raised (for example `BOOKING_RATE_LIMIT=500 npm start`), and `psql` on the PATH or set as `PSQL`.
-- `npm test` runs 53 unit tests: availability, booking rules across barbershops, license states,
-  password hashing and signed tokens, rate limits, uploads, slugs and input validation.
-- A GitHub Actions workflow (`.github/workflows/ci.yml`) builds and tests every push and pull request.
+- 💳 Payments, with licenses that update automatically
+- 🌐 A custom domain for each barbershop
+- 📧 E-mail confirmations and reminders
+- 📋 A bookings list and cancellations for the owner
+- 👥 Several owner accounts per shop
 
-## Roadmap
+---
 
-- Payment integration and automatic license updates.
-- Custom domains for each barbershop.
-- E-mail confirmations and reminders.
-- A bookings list and cancellations for the owner.
-- Multiple owner accounts per shop.
+## 👨‍💻 About the author
 
-## About the author
+Hi, I'm **Alexandro Cunha** ([@AlexandroCunha](https://github.com/AlexandroCunha)). I work on
+back-end development, mainly with Node.js, TypeScript and PostgreSQL. I'm the author of **Financify**, a
+personal finance REST API built with Express 5, PostgreSQL and JWT, and of this project, which I built
+from scratch to show how a booking system can serve many barbershops with licenses, security and a
+simple owner area.
 
-Hi, I'm Alexandro Cunha ([@AlexandroCunha](https://github.com/AlexandroCunha)). I work on back-end development, mainly with Node.js, TypeScript and PostgreSQL. I'm the author of **Financify**, a personal finance REST API built with Express 5, PostgreSQL and JWT, and of this project, Barbearia, which I built from scratch to show how a booking system can serve many barbershops with licenses, security and a simple owner area.
-
-In this project I designed the multi-tenant model, the booking and license rules, the authentication and the user interface. If you'd like to talk about the system, about back-end work, or about bringing this product to barbershops, reach out through GitHub.
+In this project I designed the multi-tenant model, the booking and license rules, the authentication and
+the user interface. Want to talk about the system, back-end work, or bringing this product to barbershops?
+Reach out on GitHub. 👋
 
 [Complete with your education, experience and contact details.]
+
+---
+
+<div align="center">
+
+Made with ☕ and a lot of careful testing · [🇧🇷 Leia em português](README.pt-BR.md)
+
+</div>
