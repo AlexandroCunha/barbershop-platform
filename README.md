@@ -1,17 +1,23 @@
 <div align="center">
 
-# ✂️ Barbearia
+<img src="docs/banner.svg" alt="Barbearia: online booking for barbershops, made simple" width="100%">
 
-**Online booking for barbershops, made simple.**
-
-Every barbershop gets its own address, a beautiful website, a booking calendar and an owner area
-to keep everything up to date. One installation serves many shops.
+**Online booking for barbershops, made simple.** Every shop gets its own address, a beautiful website,
+a booking calendar and an owner area. One installation serves many shops.
 
 [![CI](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
-![License](https://img.shields.io/badge/license-proprietary-lightgrey)
+![License](https://img.shields.io/badge/license-proprietary-171717)
+
+<br>
+
+[![Screens](https://img.shields.io/badge/Screens-%E2%86%92-B77951?style=for-the-badge&labelColor=171717)](#-take-a-look)
+[![Features](https://img.shields.io/badge/Features-%E2%86%92-41483A?style=for-the-badge&labelColor=171717)](#-what-you-get)
+[![Quick start](https://img.shields.io/badge/Quick_start-%E2%86%92-8A5A3B?style=for-the-badge&labelColor=171717)](#-quick-start)
+[![How it works](https://img.shields.io/badge/How_it_works-%E2%86%92-B77951?style=for-the-badge&labelColor=171717)](#-how-it-works)
+[![Testing](https://img.shields.io/badge/Testing-%E2%86%92-41483A?style=for-the-badge&labelColor=171717)](#-testing--ci)
 
 **🇬🇧 English** · [🇧🇷 Português](README.pt-BR.md)
 
@@ -25,42 +31,50 @@ to keep everything up to date. One installation serves many shops.
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/01-website-hero.png" alt="The barbershop website: hero section"><br>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/01-website-hero.png" alt="The barbershop website: hero section" width="100%"><br>
       <sub><b>The website</b>: a first impression that fits the shop</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/02-barbers-and-services-menu.png" alt="Barbers and the services menu"><br>
-      <sub><b>Barbers and services</b>: pick a barber and a service side by side</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/03-booking-date-and-time.png" alt="Choosing a date and time"><br>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshots/02-barbers-and-services-menu.png" alt="Barbers and the services menu" width="100%"><br>
+      <sub><b>Barbers and services</b>: pick a barber and a service side by side</sub>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshots/03-booking-date-and-time.png" alt="Choosing a date and time" width="100%"><br>
       <sub><b>Booking</b>: choose a day and a free time</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/04-booking-details-and-summary.png" alt="Customer details and booking summary"><br>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/04-booking-details-and-summary.png" alt="Customer details and booking summary" width="100%"><br>
       <sub><b>Confirm</b>: a live summary of the appointment</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/05-mobile-hero.png" alt="Mobile view of the website"><br>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshots/05-mobile-hero.png" alt="Mobile view of the website" width="100%"><br>
       <sub><b>Mobile first</b>: it looks great on a phone</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/07-owner-area-business.png" alt="Owner area: business details"><br>
-      <sub><b>Owner area</b>: the owner edits everything without touching code</sub>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshots/06-mobile-barbers.png" alt="Mobile view of the barbers section" width="100%"><br>
+      <sub><b>Mobile barbers</b>: the team, one tap away</sub>
     </td>
   </tr>
   <tr>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/08-owner-area-services.png" alt="Owner area: services"><br>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshots/07-owner-area-business.png" alt="Owner area: business details" width="100%"><br>
+      <sub><b>Owner area</b>: the owner edits everything without touching code</sub>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/screenshots/08-owner-area-services.png" alt="Owner area: services" width="100%"><br>
       <sub><b>Services</b>: prices, durations and descriptions</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="docs/screenshots/09-platform-barbershops.png" alt="Platform area: barbershops and licenses"><br>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="docs/screenshots/09-platform-barbershops.png" alt="Platform area: barbershops and licenses" width="100%"><br>
       <sub><b>Platform owner</b>: every shop and its license in one place</sub>
     </td>
   </tr>
@@ -101,6 +115,14 @@ to keep everything up to date. One installation serves many shops.
 </td>
   </tr>
 </table>
+
+<p align="center">
+  <sub>🎨 Same palette as the website:</sub><br>
+  <img src="https://img.shields.io/badge/paper-F3F0E9-F3F0E9?style=flat-square" alt="Paper F3F0E9">
+  <img src="https://img.shields.io/badge/copper-B77951-B77951?style=flat-square" alt="Copper B77951">
+  <img src="https://img.shields.io/badge/olive-41483A-41483A?style=flat-square" alt="Olive 41483A">
+  <img src="https://img.shields.io/badge/charcoal-171717-171717?style=flat-square" alt="Charcoal 171717">
+</p>
 
 ---
 
@@ -144,7 +166,12 @@ Each barbershop is a **tenant** with its own address (`/northgate`). Its service
 bookings, owner accounts and photos never mix with another shop's data.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#fbfaf7", "primaryTextColor": "#171717", "primaryBorderColor": "#b77951", "lineColor": "#41483a", "secondaryColor": "#ebe6dc", "tertiaryColor": "#f3f0e9", "clusterBkg": "#ebe6dc", "clusterBorder": "#b77951", "fontFamily": "Inter, system-ui, sans-serif"}}}%%
 flowchart LR
+  classDef client fill:#b77951,stroke:#8a5a3b,color:#fbfaf7
+  classDef server fill:#41483a,stroke:#171717,color:#f3f0e9
+  classDef data fill:#171717,stroke:#171717,color:#f3f0e9
+
   subgraph Browser
     Site["🌐 Customer website<br/>/:shop"]
     Owner["🧑‍💼 Owner area<br/>/:shop/admin"]
@@ -167,6 +194,12 @@ flowchart LR
   REPO --> DB[("PostgreSQL 17")]
   Server -->|serves| Dist["Built React app<br/>dist-client/"]
   Server -->|serves| Media["media/&lt;shop&gt;/<br/>one folder per shop"]
+
+  class Site,Owner,Platform client
+  class API,MW,CTRL,SVC,REPO,DOM server
+  class DB data
+  style Browser fill:#f3f0e9,stroke:#b77951
+  style Server fill:#ebe6dc,stroke:#41483a
 ```
 
 **In short:** routes wire URLs to handlers, middlewares check who you are, controllers translate HTTP,
@@ -176,6 +209,7 @@ services hold the rules, and repositories are the only code that talks SQL. Ever
 ### 🗂️ Data model
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#fbfaf7", "primaryTextColor": "#171717", "primaryBorderColor": "#b77951", "lineColor": "#41483a", "attributeBackgroundColorOdd": "#fbfaf7", "attributeBackgroundColorEven": "#ebe6dc", "fontFamily": "Inter, system-ui, sans-serif"}}}%%
 erDiagram
   TENANTS ||--o{ TENANT_OWNERS : has
   TENANTS ||--o{ SERVICES : offers
@@ -204,6 +238,7 @@ erDiagram
 ### 📅 A booking, step by step
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#41483a", "primaryTextColor": "#f3f0e9", "primaryBorderColor": "#171717", "actorBkg": "#41483a", "actorBorder": "#171717", "actorTextColor": "#f3f0e9", "signalColor": "#b77951", "signalTextColor": "#171717", "noteBkgColor": "#ebe6dc", "noteBorderColor": "#b77951", "noteTextColor": "#171717", "activationBkgColor": "#ebe6dc", "activationBorderColor": "#b77951", "fontFamily": "Inter, system-ui, sans-serif"}}}%%
 sequenceDiagram
   participant C as Customer
   participant A as API
@@ -267,7 +302,7 @@ client/src/
   admin/                    owner area: business, photos, barbers, services, account
 db/migrations/              schema, applied once each and recorded in schema_migrations
 scripts/                    end-to-end simulation
-docs/                       screenshots and legal templates
+docs/                       banner, screenshots and legal templates
 media/<shop>/               each shop's photos (not committed)
 ```
 
@@ -345,6 +380,8 @@ Reach out on GitHub. 👋
 ---
 
 <div align="center">
+
+<img src="https://img.shields.io/badge/-%20-B77951?style=flat-square"><img src="https://img.shields.io/badge/-%20-41483A?style=flat-square"><img src="https://img.shields.io/badge/-%20-171717?style=flat-square">
 
 Made with ☕ and a lot of careful testing · [🇧🇷 Leia em português](README.pt-BR.md)
 
