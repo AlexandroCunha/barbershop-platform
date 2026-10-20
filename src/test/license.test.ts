@@ -31,13 +31,13 @@ test("an expired trial closes bookings", () => {
   assert.equal(allowsBookings(info.state), false);
 });
 
-test("an active licence without an end date stays open", () => {
+test("an active license without an end date stays open", () => {
   const info = licenseInfo(tenant({ licenseStatus: "active", paidUntil: null }), NOW);
   assert.equal(info.state, "active");
   assert.equal(allowsBookings(info.state), true);
 });
 
-test("an active licence whose paid period has ended is expired", () => {
+test("an active license whose paid period has ended is expired", () => {
   const info = licenseInfo(tenant({ licenseStatus: "active", paidUntil: new Date(NOW.getTime() - hour) }), NOW);
   assert.equal(info.state, "expired");
 });

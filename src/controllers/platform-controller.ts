@@ -18,7 +18,7 @@ interface PlatformControllerOptions {
   clock: Clock;
 }
 
-/** The platform owner's view: every barbershop and its licence. */
+/** The platform owner's view: every barbershop and its license. */
 export class PlatformController {
   private readonly options: PlatformControllerOptions;
 

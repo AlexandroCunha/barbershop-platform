@@ -3,7 +3,7 @@ import type { Business } from "./business.js";
 /** What the platform owner has set for a barbershop. */
 export type LicenseStatus = "trial" | "active" | "suspended";
 
-/** What the barbershop can do right now, worked out from its licence. */
+/** What the barbershop can do right now, worked out from its license. */
 export type AccessState = "trial" | "active" | "expired" | "suspended";
 
 /** One barbershop on the platform. Every shop's data is kept apart by its id. */

@@ -23,7 +23,7 @@ test("passwords must be at least 12 characters", () => {
   assert.throws(() => parseNewPassword("eleven char"), AppError);
 });
 
-test("licence updates accept only the three statuses and real dates", () => {
+test("license updates accept only the three statuses and real dates", () => {
   const input = parseLicense({ status: "active", paidUntil: "2031-01-01T00:00:00Z" });
   assert.equal(input.status, "active");
   assert.equal(input.paidUntil?.toISOString(), "2031-01-01T00:00:00.000Z");

@@ -1,6 +1,6 @@
 import { licenseInfo, type Tenant } from "../domain/tenant.js";
 
-/** What the owner sees about their own licence. */
+/** What the owner sees about their own license. */
 export function licenseSummary(tenant: Tenant, now: Date) {
   const info = licenseInfo(tenant, now);
   return { state: info.state, endsAt: info.endsAt?.toISOString() ?? null };

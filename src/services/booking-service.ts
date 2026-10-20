@@ -29,7 +29,7 @@ export interface Clock {
 
 /**
  * The booking rules for one barbershop at a time. Each call receives the shop
- * (tenant), so its hours, time zone and licence are always the right ones.
+ * (tenant), so its hours, time zone and license are always the right ones.
  */
 export class BookingService {
   constructor(

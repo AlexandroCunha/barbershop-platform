@@ -19,5 +19,5 @@ test("rejects reserved words, dashes at the edges and uppercase", () => {
 
 test("suggests an address from a shop name", () => {
   assert.equal(slugFromName("Northgate Barber Co."), "northgate-barber-co");
-  assert.equal(slugFromName("Barbearia do João"), "barbearia-do-joao");
+  assert.equal(slugFromName("Rene's Barbershop"), "rene-s-barbershop");
 });

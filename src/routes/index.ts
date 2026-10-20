@@ -25,7 +25,7 @@ export interface ApiDependencies {
 
 /**
  * /api/t/:slug/...   one barbershop: public site, bookings and its owner area
- * /api/platform/...  the platform owner: barbershops and their licences
+ * /api/platform/...  the platform owner: barbershops and their licenses
  */
 export function createApiRouter(deps: ApiDependencies): Router {
   const router = Router();

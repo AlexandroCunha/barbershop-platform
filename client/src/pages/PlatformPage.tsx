@@ -5,7 +5,7 @@ import type { TenantSummary } from "../types";
 
 type Status = "checking" | "signed-out" | "signed-in";
 
-/** The platform owner's area: every barbershop, its licence, and new shops. */
+/** The platform owner's area: every barbershop, its license, and new shops. */
 export function PlatformPage() {
   const [status, setStatus] = useState<Status>("checking");
 
@@ -222,7 +222,7 @@ function LicenseRow({ tenant, onSaved }: { tenant: TenantSummary; onSaved: (tena
   }
 
   return (
-    <div className="licence-row">
+    <div className="license-row">
       <div>
         <strong>{tenant.name}</strong>
         <p className="muted note">
@@ -232,7 +232,7 @@ function LicenseRow({ tenant, onSaved }: { tenant: TenantSummary; onSaved: (tena
           · <a href={`/${tenant.slug}/admin`} target="_blank" rel="noopener noreferrer">owner area</a> · {tenant.state}
         </p>
       </div>
-      <div className="licence-fields">
+      <div className="license-fields">
         <Field label="Status" htmlFor={`status-${tenant.id}`}>
           <select id={`status-${tenant.id}`} value={status} onChange={(event) => setStatus(event.target.value as TenantSummary["status"])}>
             <option value="trial">Trial</option>

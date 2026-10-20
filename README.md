@@ -3,7 +3,7 @@
 Online booking software for barbershops. Each barbershop gets its own address, a public
 website with services, barbers, opening hours and a booking flow, and an owner area to keep
 everything up to date. One installation serves many barbershops (multi-tenant SaaS), and the
-platform owner controls each shop's licence from a separate area.
+platform owner controls each shop's license from a separate area.
 
 > Sample content in the screenshots (names, prices, address, phone) is invented for the demo.
 
@@ -20,7 +20,7 @@ platform owner controls each shop's licence from a separate area.
 
 | Owner: services | Platform owner |
 | --- | --- |
-| ![Owner area: services](docs/screenshots/08-owner-area-services.png) | ![Platform: barbershops and licences](docs/screenshots/09-platform-barbershops.png) |
+| ![Owner area: services](docs/screenshots/08-owner-area-services.png) | ![Platform: barbershops and licenses](docs/screenshots/09-platform-barbershops.png) |
 
 ## Features
 
@@ -34,11 +34,11 @@ platform owner controls each shop's licence from a separate area.
 - Photos: upload JPG, PNG or WebP files, then choose a hero image and barber portraits.
 - Barbers and services: add, rename, set prices, durations and descriptions.
 - Account: change password (other sessions are signed out).
-- Licence notice: shows whether online booking is open and until when.
+- License notice: shows whether online booking is open and until when.
 
 **Platform owner** (`/platform`)
 - Create barbershops (name, address, owner login). Each one starts with a 14-day trial.
-- Set each shop's licence status (trial, active or suspended), trial end and paid-until date.
+- Set each shop's license status (trial, active or suspended), trial end and paid-until date.
 
 ## Architecture
 
@@ -56,9 +56,9 @@ flowchart LR
     API["/api routes"]
     MW["Middlewares<br/>tenant lookup · owner / platform session<br/>rate limits · security headers"]
     CTRL["Controllers<br/>HTTP in and out"]
-    SVC["Services<br/>booking rules · licence checks · account rules"]
+    SVC["Services<br/>booking rules · license checks · account rules"]
     REPO["Repositories<br/>SQL, always filtered by tenant"]
-    DOM["Domain<br/>availability · opening hours · licence states · validation"]
+    DOM["Domain<br/>availability · opening hours · license states · validation"]
     API --> MW --> CTRL --> SVC --> REPO
     SVC --> DOM
   end
@@ -70,7 +70,7 @@ flowchart LR
 
 **Layers.** Routes only wire URLs to handlers. Middlewares resolve the shop (`:slug`), check the
 owner or platform session and apply rate limits. Controllers translate HTTP into calls and back.
-Services hold the rules (for example: a shop with an expired licence cannot take bookings).
+Services hold the rules (for example: a shop with an expired license cannot take bookings).
 Repositories are the only code that writes SQL, and every query filters by `tenant_id`.
 Domain modules are pure functions and types with no I/O, which keeps them easy to test.
 
@@ -114,7 +114,7 @@ sequenceDiagram
   participant C as Customer
   participant A as API
   participant S as BookingService
-  participant L as Licence check
+  participant L as License check
   participant R as Repositories
   C->>A: POST /api/t/northgate/bookings
   A->>A: loadTenant (slug) · rate limit
@@ -128,9 +128,9 @@ sequenceDiagram
   A-->>C: 201 with date, time and reference
 ```
 
-### Licences
+### Licenses
 
-A shop's licence decides whether customers can book. The owner area always stays open, so the
+A shop's license decides whether customers can book. The owner area always stays open, so the
 owner can see the reason and fix their account.
 
 | Status set by the platform owner | Customers can book? | What the owner sees |
@@ -168,7 +168,7 @@ src/
   middlewares/              shop lookup, owner and platform sessions, rate limits, headers
   controllers/              HTTP handlers (request → service → response)
   services/                 booking rules, account rules, owner content rules
-  domain/                   pure logic: availability, opening hours, licence states, slugs, defaults
+  domain/                   pure logic: availability, opening hours, license states, slugs, defaults
   repositories/             SQL, one file per table, always tenant-scoped
   auth/                     tokens, password hashing, session names
   validations/              input checks for every endpoint
@@ -228,48 +228,42 @@ For development run `npm run dev:api` and `npm run dev:web` in two terminals.
 ## Business model and licensing
 
 Barbershops pay a monthly or yearly **subscription** to use the hosted service. The code stays
-with its owner. Customers receive a licence to use the service, not the software. The usual
+with its owner. Customers receive a license to use the service, not the software. The usual
 choices and what this project does about each:
 
 | Model | Who runs it | Fit for this product |
 | --- | --- | --- |
-| **Hosted subscription (SaaS)**, one install for many shops | You | Recommended. Recurring revenue, updates in one place, no installs for the customer. Implemented: multi-tenancy, trials, licence states, platform area. |
-| **Self-hosted licence** (licence key or annual fee), the shop runs its own copy | The customer | Possible later for shops that insist on their own server. Needs a licence key check and support. Not implemented. |
+| **Hosted subscription (SaaS)**, one install for many shops | You | Recommended. Recurring revenue, updates in one place, no installs for the customer. Implemented: multi-tenancy, trials, license states, platform area. |
+| **Self-hosted license** (license key or annual fee), the shop runs its own copy | The customer | Possible later for shops that insist on their own server. Needs a license key check and support. Not implemented. |
 | **Open source** with a commercial add-on | Anyone | Not recommended if the goal is to sell this product; others can copy it. |
 
 The project is **proprietary**. [`LICENSE`](LICENSE) says who owns the code, what customers may do and what they
-may not. The customer agreement lives in [`docs/legal/termos-de-uso.md`](docs/legal/termos-de-uso.md) and the
-privacy policy in [`docs/legal/politica-de-privacidade.md`](docs/legal/politica-de-privacidade.md).
+may not. The customer agreement lives in [`docs/legal/terms-of-service.md`](docs/legal/terms-of-service.md) and the
+privacy policy in [`docs/legal/privacy-policy.md`](docs/legal/privacy-policy.md).
 These are templates; have a lawyer adapt them before you sell.
 
 **Roadmap for billing.** Connect a payment provider (for example Stripe, Mercado Pago or Paddle) so that
 a successful payment sets `paid_until` and a failed or cancelled one moves the shop to `suspended`.
-Until then the platform owner sets licences by hand in `/platform`.
+Until then the platform owner sets licenses by hand in `/platform`.
 
 ## Testing and CI
 
-- `npm test` runs 53 unit tests: availability, booking rules across barbershops, licence states,
+- `npm test` runs 53 unit tests: availability, booking rules across barbershops, license states,
   password hashing and signed tokens, rate limits, uploads, slugs and input validation.
 - A GitHub Actions workflow (`.github/workflows/ci.yml`) builds and tests every push and pull request.
 
 ## Roadmap
 
-- Payment integration and automatic licence updates.
+- Payment integration and automatic license updates.
 - Custom domains for each barbershop.
 - E-mail confirmations and reminders.
 - A bookings list and cancellations for the owner.
 - Multiple owner accounts per shop.
 
-## Sobre o autor
+## About the author
 
-Olá, eu sou o Alexandro Cunha ([@AlexandroCunha](https://github.com/AlexandroCunha)). Trabalho com
-desenvolvimento back-end, principalmente com Node.js, TypeScript e PostgreSQL. Sou autor do
-**Financify**, uma API REST de finanças pessoais feita com Express 5, PostgreSQL e JWT, e deste projeto,
-o Barbearia, que construí do zero para mostrar como um sistema de agendamentos pode atender várias
-barbearias com licenças, segurança e uma área do proprietário simples.
+Hi, I'm Alexandro Cunha ([@AlexandroCunha](https://github.com/AlexandroCunha)). I work on back-end development, mainly with Node.js, TypeScript and PostgreSQL. I'm the author of **Financify**, a personal finance REST API built with Express 5, PostgreSQL and JWT, and of this project, Barbearia, which I built from scratch to show how a booking system can serve many barbershops with licenses, security and a simple owner area.
 
-Neste projeto, cuidei da modelagem multi-tenant, das regras de agendamento e de licença, da autenticação
-e da interface. Se quiser conversar sobre o sistema, sobre back-end ou sobre como levar o produto para
-barbearias, fale comigo pelo GitHub.
+In this project I designed the multi-tenant model, the booking and license rules, the authentication and the user interface. If you'd like to talk about the system, about back-end work, or about bringing this product to barbershops, reach out through GitHub.
 
-[Complete aqui com sua formação, experiência e forma de contato.]
+[Complete with your education, experience and contact details.]
