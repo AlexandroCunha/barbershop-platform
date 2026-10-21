@@ -1,8 +1,8 @@
-import path from "node:path";
 import type { Business } from "../domain/business.js";
 import type { Professional, ProfessionalPatch, Service, ServicePatch } from "../domain/types.js";
 import type { Tenant } from "../domain/tenant.js";
-import { MediaStore } from "../media/media-store.js";
+import type { MediaStorage } from "../media/media-storage.js";
+import { savePhoto } from "../media/photo-upload.js";
 import type {
   NewProfessional,
   NewService,
@@ -16,7 +16,7 @@ import { AppError } from "../utils/app-error.js";
 export class AdminService {
   constructor(
     private readonly tenants: TenantRepository,
-    private readonly mediaRoot: string,
+    private readonly media: MediaStorage,
     private readonly services: ServiceRepository,
     private readonly professionals: ProfessionalRepository,
   ) {}
@@ -26,17 +26,13 @@ export class AdminService {
     return business;
   }
 
-  private mediaFor(tenant: Tenant): MediaStore {
-    // Each shop's photos live in their own folder, named after its address.
-    return new MediaStore(path.join(this.mediaRoot, tenant.slug));
-  }
-
+  /** Each shop's photos are kept under its own address. */
   listMedia(tenant: Tenant): Promise<string[]> {
-    return this.mediaFor(tenant).list();
+    return this.media.list(tenant.slug);
   }
 
   uploadMedia(tenant: Tenant, originalName: string, contentType: string, data: Buffer): Promise<string> {
-    return this.mediaFor(tenant).save(originalName, contentType, data);
+    return savePhoto(this.media, tenant.slug, originalName, contentType, data);
   }
 
   createService(tenant: Tenant, input: NewService): Promise<Service> {

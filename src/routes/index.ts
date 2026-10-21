@@ -4,7 +4,7 @@ import type { BookingController } from "../controllers/booking-controller.js";
 import type { OwnerController } from "../controllers/owner-controller.js";
 import type { PlatformController } from "../controllers/platform-controller.js";
 import type { SiteController } from "../controllers/site-controller.js";
-import { MEDIA_CONTENT_TYPES } from "../media/media-store.js";
+import { MEDIA_CONTENT_TYPES } from "../media/media-storage.js";
 import { loadTenant } from "../middlewares/load-tenant.js";
 import type { TenantRepository } from "../repositories/types.js";
 

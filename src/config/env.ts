@@ -1,3 +1,5 @@
+import type { S3Settings } from "../media/s3-media-storage.js";
+
 /** Shortest accepted values, so the secrets cannot be guessed easily. */
 const MIN_SESSION_SECRET_LENGTH = 32;
 const MIN_PLATFORM_TOKEN_LENGTH = 24;
@@ -18,6 +20,38 @@ export interface Config {
   trustProxyHops: number;
   /** Booking requests allowed per address in 10 minutes. Raise it for load tests only. */
   bookingRateLimit: number;
+  media: MediaConfig;
+}
+
+/** Local disk for a single server; S3-compatible storage when several servers share the photos. */
+export type MediaConfig = { kind: "local" } | { kind: "s3"; settings: S3Settings };
+
+function parseMedia(env: NodeJS.ProcessEnv): MediaConfig {
+  const kind = env.MEDIA_STORAGE?.trim().toLowerCase() || "local";
+  if (kind === "local") return { kind: "local" };
+  if (kind !== "s3") {
+    throw new Error(`MEDIA_STORAGE must be "local" or "s3", not "${kind}"`);
+  }
+
+  const bucket = env.S3_BUCKET?.trim();
+  const endpoint = env.S3_ENDPOINT?.trim();
+  const accessKeyId = env.S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = env.S3_SECRET_ACCESS_KEY?.trim();
+
+  if (!bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+    const missing = [
+      !bucket && "S3_BUCKET",
+      !endpoint && "S3_ENDPOINT",
+      !accessKeyId && "S3_ACCESS_KEY_ID",
+      !secretAccessKey && "S3_SECRET_ACCESS_KEY",
+    ].filter(Boolean);
+    throw new Error(`MEDIA_STORAGE=s3 needs these variables: ${missing.join(", ")}`);
+  }
+
+  return {
+    kind: "s3",
+    settings: { bucket, endpoint, region: env.S3_REGION?.trim() || "auto", accessKeyId, secretAccessKey },
+  };
 }
 
 function parseRateLimit(value: string | undefined, fallback: number): number {
@@ -83,5 +117,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
     trustProxyHops: parseTrustProxyHops(env.TRUST_PROXY),
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
+    media: parseMedia(env),
   };
 }

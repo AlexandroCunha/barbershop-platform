@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { parseBusiness } from "../domain/business.js";
 import { mediaUrl } from "../domain/media-name.js";
 import { tenantOf } from "../middlewares/load-tenant.js";
-import { MEDIA_CONTENT_TYPES } from "../media/media-store.js";
+import { MEDIA_CONTENT_TYPES } from "../media/media-storage.js";
 import type { AdminService } from "../services/admin-service.js";
 import { AppError } from "../utils/app-error.js";
 import {

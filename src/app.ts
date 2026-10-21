@@ -4,6 +4,7 @@ import { CLIENT_DIR } from "./config/paths.js";
 import { errorHandler } from "./middlewares/error-handler.js";
 import { securityHeaders } from "./middlewares/security-headers.js";
 import { serveMedia } from "./middlewares/serve-media.js";
+import type { MediaStorage } from "./media/media-storage.js";
 import { createApiRouter, type ApiDependencies } from "./routes/index.js";
 
 export interface AppOptions {
@@ -11,8 +12,8 @@ export interface AppOptions {
   secureCookies: boolean;
   /** Reverse proxies in front of the app. Client addresses are read past this many X-Forwarded-For hops. */
   trustProxyHops: number;
-  /** Folder that holds each shop's photos, one sub-folder per shop. */
-  mediaRoot: string;
+  /** Where each shop's photos are kept. */
+  media: MediaStorage;
 }
 
 export function createApp(deps: ApiDependencies, options: AppOptions): express.Express {
@@ -36,7 +37,7 @@ export function createApp(deps: ApiDependencies, options: AppOptions): express.E
     res.status(404).json({ error: "Not found" });
   });
 
-  app.get("/media/:slug/:file", serveMedia(options.mediaRoot));
+  app.get("/media/:slug/:file", serveMedia(options.media));
   app.use("/media", (_req: Request, res: Response) => {
     res.status(404).end();
   });

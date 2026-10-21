@@ -1,12 +1,13 @@
 # Deploying Barbearia
 
-This guide covers a single production server. Read the scaling notes at the end before running more than one instance.
+This guide covers production. One server runs fine on the defaults. To run several servers behind a load balancer, follow the [scaling](#scaling) section.
 
 ## What you need
 
 - Node.js 22 and PostgreSQL 17.
 - A domain name with HTTPS. Session cookies are marked `Secure` in production, so the site does not work over plain HTTP.
 - A reverse proxy in front of the app (for example Caddy or nginx) that handles HTTPS.
+- For several servers, an S3-compatible bucket for photos. Cloudflare R2 is a good fit because it has no egress fees.
 
 ## Configuration
 
@@ -22,6 +23,9 @@ Set these variables in the server's environment, or in a `.env` file that only t
 | `TRUST_PROXY` | see below | The number of reverse proxies in front of the app. |
 | `COOKIE_SECURE` | no | Defaults to `true` in production. |
 | `BOOKING_RATE_LIMIT` | no | Booking requests per address in 10 minutes. Defaults to `30`. |
+| `MEDIA_STORAGE` | no | `local` (default) keeps photos on this server's disk. `s3` stores them in a bucket. |
+| `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | when `MEDIA_STORAGE=s3` | Bucket and credentials. The app refuses to start if one is missing. |
+| `S3_REGION` | no | Defaults to `auto`, which is what R2 expects. |
 
 ### `TRUST_PROXY`: read this before you set it
 
@@ -61,25 +65,40 @@ Then open `https://your-domain/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, a
 
 ## Upgrades
 
-1. Back up the database and the `media/` folder.
+1. Back up the database and the photos (see [Backups](#backups)).
 2. Pull the new version, then run `npm ci`, `npm run build` and `npm run db:migrate`.
-3. Restart the process.
+3. Restart the process. With several servers, restart them one at a time so the site stays up.
 
 Sessions issued before an upgrade remain valid until they expire or are revoked.
 
 ## Backups
 
 - **Database:** a daily `pg_dump`, kept off the server.
-- **Photos:** the `media/` folder. It is not in git and is not in the database, so a database backup alone does not include the photos.
+- **Photos:** with `MEDIA_STORAGE=local`, the `media/` folder. With `s3`, enable versioning or a lifecycle rule on the bucket. Photos are not in the database, so a database backup alone does not include them.
 
 ## Scaling
 
-The app runs well as one instance. Two things are local to one process, so running more than one instance needs changes first:
+Running several servers is supported. The pieces that used to live in one process are now shared:
 
-- **Rate limits** are kept in memory. Each instance counts separately, so an attacker can multiply the limit by the number of instances. Store the counters in PostgreSQL (the simplest option, with no new service) or in Redis when traffic grows.
-- **Photos** are written to the local `media/` folder. Another instance cannot see them. Move them to S3-compatible object storage. Cloudflare R2 is a good fit because it has no egress fees.
+| Part | Where it lives | Shared across servers? |
+| --- | --- | --- |
+| Sessions | PostgreSQL (`sessions`) | Yes |
+| Rate limits | PostgreSQL (`rate_limits`) | Yes. One counter per address and limit, so a limit holds however many servers there are. |
+| Photos | `local` disk or S3-compatible bucket | Only with `MEDIA_STORAGE=s3` |
 
-Sessions already live in PostgreSQL, so they work across instances as they are.
+### Steps to run several servers
+
+1. **Put the photos in a bucket.** Set `MEDIA_STORAGE=s3` and the `S3_*` variables on every server. Existing photos in `media/` are not copied automatically: move them into the bucket under `<shop>/<file name>` before switching.
+2. **Check that the bucket refuses duplicate names.** The app relies on a conditional write so two servers cannot overwrite the same photo. Upload a photo named `test.jpg` to a test shop, then upload it again. The second upload must be saved as `test-2.jpg`. If it comes back as `test.jpg`, the provider does not support conditional writes, and you should not run several servers against it.
+3. **Put a load balancer in front.** Each server gets its own copy of the app with the same environment. Keep `TRUST_PROXY` set to the number of proxies in front of the app, counting the load balancer.
+4. **Put a CDN in front of `/media`.** Photo responses carry `Cache-Control: public, max-age=31536000, immutable`, and a photo name is never reused, so a CDN can keep them for good. This removes most photo traffic from the servers.
+
+### Cloudflare R2
+
+1. Create a bucket in R2.
+2. Create an API token with read and write access to that bucket only.
+3. Set `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_BUCKET` to the bucket name, and the token's key pair as `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Leave `S3_REGION` at `auto`.
+4. Run the duplicate-name check from step 2 above.
 
 ## Checklist
 
@@ -87,5 +106,6 @@ Sessions already live in PostgreSQL, so they work across instances as they are.
 - [ ] `SESSION_SECRET` and `PLATFORM_ADMIN_TOKEN` are long random values, not the examples.
 - [ ] `TRUST_PROXY=1` only if the proxy is the only route in, and unset otherwise.
 - [ ] The app's port is not reachable from the internet.
-- [ ] Database and `media/` backups run and have been restored at least once.
+- [ ] With several servers: `MEDIA_STORAGE=s3`, and the duplicate-name check passed.
+- [ ] Database and photo backups run and have been restored at least once.
 - [ ] `npm audit --omit=dev` reports no vulnerabilities.

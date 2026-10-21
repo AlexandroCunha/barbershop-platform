@@ -11,7 +11,10 @@ import { createPool } from "./db/pool.js";
 import { requireOwner } from "./middlewares/require-owner.js";
 import { requirePlatform } from "./middlewares/require-platform.js";
 import { rateLimit } from "./middlewares/rate-limit.js";
+import { LocalMediaStorage } from "./media/local-media-storage.js";
+import { createS3MediaStorage } from "./media/s3-media-storage.js";
 import { PgBookingRepository } from "./repositories/pg-booking-repository.js";
+import { PgRateLimitStore } from "./repositories/pg-rate-limit-store.js";
 import { PgOwnerRepository } from "./repositories/pg-owner-repository.js";
 import { PgProfessionalRepository } from "./repositories/pg-professional-repository.js";
 import { PgServiceRepository } from "./repositories/pg-service-repository.js";
@@ -42,12 +45,16 @@ const platformKey =
     : createHmac("sha256", config.sessionSecret).update(`platform:${config.platformToken}`).digest("base64url");
 
 const accounts = new AccountService(tenants, owners, clock);
+const media = config.media.kind === "s3" ? createS3MediaStorage(config.media.settings) : new LocalMediaStorage(MEDIA_DIR);
+// Counters live in PostgreSQL, so every instance enforces the same limits.
+const limits = new PgRateLimitStore(pool);
+
 const app = createApp(
   {
     tenants,
     booking: new BookingController(new BookingService(services, professionals, bookings, clock)),
     site: new SiteController(),
-    admin: new AdminController(new AdminService(tenants, MEDIA_DIR, services, professionals)),
+    admin: new AdminController(new AdminService(tenants, media, services, professionals)),
     owner: new OwnerController({
       accounts,
       sessions,
@@ -66,17 +73,21 @@ const app = createApp(
     requireOwner: requireOwner(config.sessionSecret, owners, sessions),
     requirePlatform: requirePlatform(platformKey, sessions),
     loginLimit: rateLimit({
+      bucket: "sign-in",
       windowMs: 15 * MINUTE,
       max: 10,
       message: "Too many sign-in attempts. Please wait 15 minutes and try again.",
+      store: limits,
     }),
     bookingLimit: rateLimit({
+      bucket: "booking",
       windowMs: 10 * MINUTE,
       max: config.bookingRateLimit,
       message: "Too many booking attempts. Please wait a few minutes and try again.",
+      store: limits,
     }),
   },
-  { secureCookies: config.secureCookies, trustProxyHops: config.trustProxyHops, mediaRoot: MEDIA_DIR },
+  { secureCookies: config.secureCookies, trustProxyHops: config.trustProxyHops, media },
 );
 
 app.listen(config.port, () => {
