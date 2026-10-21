@@ -12,6 +12,8 @@ export interface TokenPayload {
   ownerId?: number;
   /** The owner's session version when the token was issued. Changing the password bumps it. */
   version?: number;
+  /** Id of the server-side session record. The token is honoured only while that record is active. */
+  sid?: string;
 }
 
 const digest = (value: string): Buffer => createHash("sha256").update(value).digest();

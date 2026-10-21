@@ -45,4 +45,8 @@ export class PgOwnerRepository implements OwnerRepository {
     );
     return rows[0]!.session_version;
   }
+
+  async replacePasswordHash(id: number, passwordHash: string): Promise<void> {
+    await this.db.query(`UPDATE tenant_owners SET password_hash = $2 WHERE id = $1`, [id, passwordHash]);
+  }
 }

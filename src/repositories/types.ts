@@ -44,6 +44,29 @@ export interface OwnerRepository {
   findById(id: number): Promise<OwnerAccount | null>;
   /** Stores a new hash and bumps the session version, which signs out other sessions. Returns the new version. */
   updatePassword(id: number, passwordHash: string): Promise<number>;
+  /** Stores a new hash of the same password under stronger settings. Signs nobody out. */
+  replacePasswordHash(id: number, passwordHash: string): Promise<void>;
+}
+
+export type SessionKind = "owner" | "platform";
+
+export interface SessionRecord {
+  id: string;
+  kind: SessionKind;
+  /** Set for owner sessions only. */
+  tenantId: number | null;
+  /** Set for owner sessions only. */
+  ownerId: number | null;
+  expiresAt: Date;
+}
+
+export interface SessionRepository {
+  create(session: SessionRecord): Promise<void>;
+  /** The session when it exists, is not revoked and has not expired at `now`; otherwise null. */
+  findActive(id: string, now: Date): Promise<SessionRecord | null>;
+  revoke(id: string): Promise<void>;
+  /** Ends every session of one owner, for example after a password change. */
+  revokeAllForOwner(ownerId: number): Promise<void>;
 }
 
 export interface NewService {

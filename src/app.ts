@@ -9,8 +9,8 @@ import { createApiRouter, type ApiDependencies } from "./routes/index.js";
 export interface AppOptions {
   /** Cookies and HSTS are only sent when the site is served over HTTPS. */
   secureCookies: boolean;
-  /** Set when running behind a reverse proxy, so client addresses come from its X-Forwarded-For header. */
-  trustProxy: boolean;
+  /** Reverse proxies in front of the app. Client addresses are read past this many X-Forwarded-For hops. */
+  trustProxyHops: number;
   /** Folder that holds each shop's photos, one sub-folder per shop. */
   mediaRoot: string;
 }
@@ -19,8 +19,9 @@ export function createApp(deps: ApiDependencies, options: AppOptions): express.E
   const app = express();
 
   app.disable("x-powered-by");
-  if (options.trustProxy) {
-    app.set("trust proxy", 1);
+  // With no proxy in front, req.ip is the socket address and X-Forwarded-For is ignored.
+  if (options.trustProxyHops > 0) {
+    app.set("trust proxy", options.trustProxyHops);
   }
 
   app.use(securityHeaders({ hsts: options.secureCookies }));

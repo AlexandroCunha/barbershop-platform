@@ -15,10 +15,12 @@ import { PgBookingRepository } from "./repositories/pg-booking-repository.js";
 import { PgOwnerRepository } from "./repositories/pg-owner-repository.js";
 import { PgProfessionalRepository } from "./repositories/pg-professional-repository.js";
 import { PgServiceRepository } from "./repositories/pg-service-repository.js";
+import { PgSessionRepository } from "./repositories/pg-session-repository.js";
 import { PgTenantRepository } from "./repositories/pg-tenant-repository.js";
 import { AccountService } from "./services/account-service.js";
 import { AdminService } from "./services/admin-service.js";
 import { BookingService } from "./services/booking-service.js";
+import { SessionService } from "./services/session-service.js";
 import { systemClock as clock } from "./utils/clock.js";
 
 const MINUTE = 60_000;
@@ -31,6 +33,7 @@ const owners = new PgOwnerRepository(pool);
 const services = new PgServiceRepository(pool);
 const professionals = new PgProfessionalRepository(pool);
 const bookings = new PgBookingRepository(pool);
+const sessions = new SessionService(new PgSessionRepository(pool), clock);
 
 // The platform key is derived from the platform token, so rotating the token ends platform sessions.
 const platformKey =
@@ -47,6 +50,7 @@ const app = createApp(
     admin: new AdminController(new AdminService(tenants, MEDIA_DIR, services, professionals)),
     owner: new OwnerController({
       accounts,
+      sessions,
       secret: config.sessionSecret,
       secureCookies: config.secureCookies,
       clock,
@@ -55,11 +59,12 @@ const app = createApp(
       platformToken: config.platformToken,
       platformKey,
       accounts,
+      sessions,
       secureCookies: config.secureCookies,
       clock,
     }),
-    requireOwner: requireOwner(config.sessionSecret, owners),
-    requirePlatform: requirePlatform(platformKey),
+    requireOwner: requireOwner(config.sessionSecret, owners, sessions),
+    requirePlatform: requirePlatform(platformKey, sessions),
     loginLimit: rateLimit({
       windowMs: 15 * MINUTE,
       max: 10,
@@ -71,7 +76,7 @@ const app = createApp(
       message: "Too many booking attempts. Please wait a few minutes and try again.",
     }),
   },
-  { secureCookies: config.secureCookies, trustProxy: config.trustProxy, mediaRoot: MEDIA_DIR },
+  { secureCookies: config.secureCookies, trustProxyHops: config.trustProxyHops, mediaRoot: MEDIA_DIR },
 );
 
 app.listen(config.port, () => {

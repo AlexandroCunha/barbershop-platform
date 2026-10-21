@@ -1,10 +1,11 @@
 import type { Request, Response } from "express";
 import { PLATFORM_COOKIE, PLATFORM_COOKIE_PATH, SESSION_SECONDS } from "../auth/session-config.js";
-import { issueToken, stringsMatch } from "../auth/tokens.js";
+import { issueToken, readToken, stringsMatch } from "../auth/tokens.js";
 import type { AccountService } from "../services/account-service.js";
+import type { SessionService } from "../services/session-service.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
-import { buildCookie } from "../utils/cookies.js";
+import { buildCookie, parseCookies } from "../utils/cookies.js";
 import { parseLicense, parseNewTenant } from "../validations/accounts.js";
 import { tenantSummary } from "./summaries.js";
 
@@ -14,6 +15,7 @@ interface PlatformControllerOptions {
   /** Key that signs platform sessions. Derived from the token, so changing the token ends them. */
   platformKey: string | undefined;
   accounts: AccountService;
+  sessions: SessionService;
   secureCookies: boolean;
   clock: Clock;
 }
@@ -26,8 +28,8 @@ export class PlatformController {
     this.options = options;
   }
 
-  login = (req: Request, res: Response): void => {
-    const { platformToken, platformKey, secureCookies, clock } = this.options;
+  login = async (req: Request, res: Response): Promise<void> => {
+    const { platformToken, platformKey, secureCookies, sessions } = this.options;
     if (platformToken === undefined || platformKey === undefined) {
       throw new AppError(503, "The platform area is not available.");
     }
@@ -37,8 +39,8 @@ export class PlatformController {
       throw new AppError(401, "Invalid platform token");
     }
 
-    const expiresAt = Math.floor(clock.now().getTime() / 1000) + SESSION_SECONDS;
-    const value = issueToken(platformKey, { kind: "platform", exp: expiresAt });
+    const session = await sessions.openPlatformSession();
+    const value = issueToken(platformKey, { kind: "platform", exp: session.expiresAt, sid: session.id });
     res.setHeader(
       "Set-Cookie",
       buildCookie(PLATFORM_COOKIE, value, { path: PLATFORM_COOKIE_PATH, maxAgeSeconds: SESSION_SECONDS, secure: secureCookies }),
@@ -46,10 +48,19 @@ export class PlatformController {
     res.json({ ok: true });
   };
 
-  logout = (_req: Request, res: Response): void => {
+  /** Ends the platform session on the server, so a copy of the cookie stops working at once. */
+  logout = async (req: Request, res: Response): Promise<void> => {
+    const { platformKey, secureCookies, sessions, clock } = this.options;
+    if (platformKey !== undefined) {
+      const payload = readToken(platformKey, parseCookies(req.headers.cookie)[PLATFORM_COOKIE], clock.now().getTime());
+      if (payload?.sid) {
+        await sessions.revoke(payload.sid);
+      }
+    }
+
     res.setHeader(
       "Set-Cookie",
-      buildCookie(PLATFORM_COOKIE, "", { path: PLATFORM_COOKIE_PATH, maxAgeSeconds: 0, secure: this.options.secureCookies }),
+      buildCookie(PLATFORM_COOKIE, "", { path: PLATFORM_COOKIE_PATH, maxAgeSeconds: 0, secure: secureCookies }),
     );
     res.status(204).end();
   };

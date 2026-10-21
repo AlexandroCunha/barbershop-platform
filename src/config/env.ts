@@ -11,8 +11,11 @@ export interface Config {
   platformToken: string | undefined;
   /** Send session cookies only over HTTPS. On by default in production. */
   secureCookies: boolean;
-  /** Trust X-Forwarded-For from a reverse proxy. */
-  trustProxy: boolean;
+  /**
+   * Number of reverse proxies in front of the app, each of which appends to X-Forwarded-For.
+   * 0 means the app is reached directly, and client addresses come from the socket alone.
+   */
+  trustProxyHops: number;
   /** Booking requests allowed per address in 10 minutes. Raise it for load tests only. */
   bookingRateLimit: number;
 }
@@ -24,6 +27,27 @@ function parseRateLimit(value: string | undefined, fallback: number): number {
     throw new Error("BOOKING_RATE_LIMIT must be a positive whole number");
   }
   return parsed;
+}
+
+const MAX_PROXY_HOPS = 5;
+
+/**
+ * Trusting X-Forwarded-For is only safe when a proxy sits in front of the app and appends to it.
+ * Without one, any client can send that header with any address, and the per-address rate
+ * limits stop protecting anything. So the value must be the proxy count, and unset means none.
+ */
+function parseTrustProxyHops(value: string | undefined): number {
+  const text = value?.trim() ?? "";
+  if (text === "" || text === "0") return 0;
+
+  const hops = Number(text);
+  if (!Number.isInteger(hops) || hops < 1 || hops > MAX_PROXY_HOPS) {
+    throw new Error(
+      `TRUST_PROXY must be the number of reverse proxies in front of the app (0 to ${MAX_PROXY_HOPS}), ` +
+        `usually 1. Leave it unset when the app is reached directly. Got "${text}".`,
+    );
+  }
+  return hops;
 }
 
 const isTrue = (value: string | undefined): boolean => value?.toLowerCase() === "true";
@@ -57,7 +81,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionSecret,
     platformToken,
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
-    trustProxy: isTrue(env.TRUST_PROXY),
+    trustProxyHops: parseTrustProxyHops(env.TRUST_PROXY),
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
   };
 }

@@ -1,4 +1,4 @@
-import { decoyPasswordHash, hashPassword, verifyPassword } from "../auth/passwords.js";
+import { decoyPasswordHash, hashPassword, needsRehash, verifyPassword } from "../auth/passwords.js";
 import { DEFAULT_BUSINESS, DEFAULT_PROFESSIONALS, DEFAULT_SERVICES, TRIAL_DAYS } from "../domain/defaults.js";
 import { parseBusiness } from "../domain/business.js";
 import type { LicenseStatus, Tenant } from "../domain/tenant.js";
@@ -26,6 +26,11 @@ export class AccountService {
 
     if (!owner || !passwordMatches) {
       throw new AppError(401, "Email or password is not correct");
+    }
+
+    // Upgrade a hash made with older scrypt settings while the correct password is at hand.
+    if (needsRehash(owner.passwordHash)) {
+      await this.owners.replacePasswordHash(owner.id, await hashPassword(password));
     }
     return owner;
   }

@@ -283,7 +283,7 @@ media/<shop>/               as fotos de cada barbearia (não versionadas)
 | `PLATFORM_ADMIN_TOKEN` | para `/platform` (24+ caracteres) | O token de acesso do dono da plataforma |
 | `PORT` | | Porta do site e da API. Padrão `3100` |
 | `COOKIE_SECURE` | | Envia cookies só por HTTPS. Ligada por padrão em produção |
-| `TRUST_PROXY` | | Use `true` atrás de um proxy reverso que envie `X-Forwarded-For` |
+| `TRUST_PROXY` | | Número de proxies reversos na frente da aplicação (geralmente `1`). Deixe sem valor se não houver proxy. Veja o [guia de deploy](docs/DEPLOY.md) |
 | `BOOKING_RATE_LIMIT` | | Agendamentos permitidos por endereço em 10 minutos. Padrão `30` |
 
 ---

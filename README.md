@@ -283,7 +283,7 @@ media/<shop>/               each shop's photos (not committed)
 | `PLATFORM_ADMIN_TOKEN` | for `/platform` (24+ chars) | The platform owner's sign-in token |
 | `PORT` | | Port for the site and API. Default `3100` |
 | `COOKIE_SECURE` | | Send cookies only over HTTPS. On by default in production |
-| `TRUST_PROXY` | | Set to `true` behind a reverse proxy that sets `X-Forwarded-For` |
+| `TRUST_PROXY` | | Number of reverse proxies in front of the app (usually `1`). Leave it unset without a proxy. See [deploy guide](docs/DEPLOY.md) |
 | `BOOKING_RATE_LIMIT` | | Booking requests allowed per address in 10 minutes. Default `30` |
 
 ---
