@@ -1,13 +1,10 @@
-import { availableStartMinutes } from "../domain/availability.js";
+import { availableStartMinutes, type BusyPeriod } from "../domain/availability.js";
 import { allowsBookings, licenseInfo, type Tenant } from "../domain/tenant.js";
-import { openingHoursFor } from "../domain/opening-hours.js";
+import { openingHoursFor, type TimeWindow } from "../domain/opening-hours.js";
 import type { Booking, Professional, Service } from "../domain/types.js";
-import type {
-  BookingRepository,
-  ProfessionalRepository,
-  ServiceRepository,
-} from "../repositories/types.js";
+import type { BookingRepository, ProfessionalRepository, ServiceRepository } from "../repositories/types.js";
 import { AppError } from "../utils/app-error.js";
+import type { Clock } from "../utils/clock.js";
 import { minutesToTime } from "../utils/time.js";
 
 export interface BookingRequest {
@@ -19,12 +16,6 @@ export interface BookingRequest {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-}
-
-export interface Clock {
-  now(): Date;
-  /** Today's date in the given time zone, as YYYY-MM-DD. */
-  today(timeZone: string): string;
 }
 
 /**
@@ -52,9 +43,12 @@ export class BookingService {
     const service = await this.requireService(tenant, serviceId);
     this.assertNotPast(tenant, date);
 
+    const window = openingHoursFor(tenant.business.hours, date);
+    const busy = await this.busyByProfessional(tenant, date);
+
     const starts = new Set<number>();
     for (const professional of await this.candidates(tenant, professionalId)) {
-      for (const start of await this.freeStarts(tenant, service, professional.id, date)) {
+      for (const start of freeStarts(window, service, busy.get(professional.id))) {
         starts.add(start);
       }
     }
@@ -67,8 +61,11 @@ export class BookingService {
     const service = await this.requireService(tenant, request.serviceId);
     this.assertNotPast(tenant, request.date);
 
+    const window = openingHoursFor(tenant.business.hours, request.date);
+    const busy = await this.busyByProfessional(tenant, request.date);
+
     for (const professional of await this.candidates(tenant, request.professionalId)) {
-      const starts = await this.freeStarts(tenant, service, professional.id, request.date);
+      const starts = freeStarts(window, service, busy.get(professional.id));
       if (!starts.includes(request.startMinute)) {
         continue;
       }
@@ -115,14 +112,15 @@ export class BookingService {
     return [professional];
   }
 
-  private async freeStarts(tenant: Tenant, service: Service, professionalId: number, date: string): Promise<number[]> {
-    const existing = await this.bookings.findByProfessionalAndDate(tenant.id, professionalId, date);
-
-    return availableStartMinutes({
-      window: openingHoursFor(tenant.business.hours, date),
-      durationMinutes: service.durationMinutes,
-      busy: existing.map(({ startMinute, endMinute }) => ({ startMinute, endMinute })),
-    });
+  /** Every booking on the date, grouped by barber. One query, however many barbers there are. */
+  private async busyByProfessional(tenant: Tenant, isoDate: string): Promise<Map<number, BusyPeriod[]>> {
+    const busy = new Map<number, BusyPeriod[]>();
+    for (const booking of await this.bookings.findByDate(tenant.id, isoDate)) {
+      const periods = busy.get(booking.professionalId) ?? [];
+      periods.push({ startMinute: booking.startMinute, endMinute: booking.endMinute });
+      busy.set(booking.professionalId, periods);
+    }
+    return busy;
   }
 
   private async requireService(tenant: Tenant, id: number): Promise<Service> {
@@ -139,4 +137,8 @@ export class BookingService {
       throw new AppError(400, "Date is in the past");
     }
   }
+}
+
+function freeStarts(window: TimeWindow | null, service: Service, busy: BusyPeriod[] = []): number[] {
+  return availableStartMinutes({ window, durationMinutes: service.durationMinutes, busy });
 }

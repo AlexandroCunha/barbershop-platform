@@ -4,9 +4,9 @@ import { formatDate, formatDuration, formatPrice, todayIn } from "../format";
 import { useAsync } from "../hooks";
 import { useTenant } from "../tenant-context";
 import type { Availability, Confirmation, Professional, Service } from "../types";
+import { validateStep, type BookingErrors } from "../booking-validation";
 
 const STEPS = ["Service", "Date and time", "Details and confirm"] as const;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NO_TIMES: Availability = { date: "", times: [] };
 
 interface Props {
@@ -16,15 +16,6 @@ interface Props {
   serviceId?: number;
   professionalId?: number;
   onServiceChange: (id: number) => void;
-}
-
-type Errors = Partial<Record<"service" | "date" | "time" | "name" | "email" | "phone", string>>;
-
-/** A mobile number has 7 to 15 digits and only digits, spaces, brackets, dashes and a leading +. */
-function isMobileNumber(value: string): boolean {
-  const trimmed = value.trim();
-  const digits = trimmed.replace(/\D/g, "");
-  return /^\+?[0-9()\s-]+$/.test(trimmed) && digits.length >= 7 && digits.length <= 15;
 }
 
 export function BookingSection({
@@ -43,7 +34,7 @@ export function BookingSection({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [errors, setErrors] = useState<Errors>({});
+  const [errors, setErrors] = useState<BookingErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
@@ -62,20 +53,8 @@ export function BookingSection({
     setTime(undefined);
   }, [professionalId]);
 
-  function validate(current: number): Errors {
-    const found: Errors = {};
-    if (current === 0 && !serviceId) found.service = "Choose a service to continue.";
-    if (current === 1) {
-      if (!date) found.date = "Choose a date.";
-      else if (date < today) found.date = "Choose today or a later date.";
-      if (!time) found.time = "Choose an available time.";
-    }
-    if (current === 2) {
-      if (!name.trim()) found.name = "Enter your name.";
-      if (!EMAIL_PATTERN.test(email.trim())) found.email = "Enter a valid email address.";
-      if (!isMobileNumber(phone)) found.phone = "Enter a mobile number, e.g. +353 85 123 4567.";
-    }
-    return found;
+  function validate(current: number): BookingErrors {
+    return validateStep(current, { serviceId, date, time, name, email, phone }, today);
   }
 
   function goNext() {

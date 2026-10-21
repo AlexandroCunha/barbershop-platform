@@ -40,12 +40,12 @@ const toBooking = (row: BookingRow): Booking => ({
 export class PgBookingRepository implements BookingRepository {
   constructor(private readonly db: DbPool) {}
 
-  async findByProfessionalAndDate(tenantId: number, professionalId: number, isoDate: string): Promise<Booking[]> {
+  async findByDate(tenantId: number, isoDate: string): Promise<Booking[]> {
     const { rows } = await this.db.query<BookingRow>(
       `SELECT ${COLUMNS} FROM bookings
-       WHERE tenant_id = $1 AND professional_id = $2 AND booking_date = $3
-       ORDER BY start_minute`,
-      [tenantId, professionalId, isoDate],
+       WHERE tenant_id = $1 AND booking_date = $2
+       ORDER BY professional_id, start_minute`,
+      [tenantId, isoDate],
     );
     return rows.map(toBooking);
   }

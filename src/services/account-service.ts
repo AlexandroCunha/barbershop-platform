@@ -2,10 +2,10 @@ import { decoyPasswordHash, hashPassword, verifyPassword } from "../auth/passwor
 import { DEFAULT_BUSINESS, DEFAULT_PROFESSIONALS, DEFAULT_SERVICES, TRIAL_DAYS } from "../domain/defaults.js";
 import { parseBusiness } from "../domain/business.js";
 import type { LicenseStatus, Tenant } from "../domain/tenant.js";
-import type { Clock } from "./booking-service.js";
 import type { OwnerAccount, OwnerRepository, TenantRepository } from "../repositories/types.js";
 import type { LicenseInput, NewTenantInput } from "../validations/accounts.js";
 import { AppError } from "../utils/app-error.js";
+import type { Clock } from "../utils/clock.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

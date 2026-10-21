@@ -1,5 +1,5 @@
 import path from "node:path";
-import { parseBusiness, type Business } from "../domain/business.js";
+import type { Business } from "../domain/business.js";
 import type { Professional, ProfessionalPatch, Service, ServicePatch } from "../domain/types.js";
 import type { Tenant } from "../domain/tenant.js";
 import { MediaStore } from "../media/media-store.js";
@@ -21,8 +21,7 @@ export class AdminService {
     private readonly professionals: ProfessionalRepository,
   ) {}
 
-  async saveBusiness(tenant: Tenant, input: unknown): Promise<Business> {
-    const business = parseBusiness(input);
+  async saveBusiness(tenant: Tenant, business: Business): Promise<Business> {
     await this.tenants.updateBusiness(tenant.id, business);
     return business;
   }

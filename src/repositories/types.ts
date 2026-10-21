@@ -78,6 +78,7 @@ export interface ProfessionalRepository {
 }
 
 export interface BookingRepository {
-  findByProfessionalAndDate(tenantId: number, professionalId: number, isoDate: string): Promise<Booking[]>;
+  /** Every booking on one date, across all barbers of the shop. */
+  findByDate(tenantId: number, isoDate: string): Promise<Booking[]>;
   create(tenantId: number, booking: NewBooking): Promise<Booking>;
 }

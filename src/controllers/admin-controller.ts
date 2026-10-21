@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { parseBusiness } from "../domain/business.js";
 import { mediaUrl } from "../domain/media-name.js";
 import { tenantOf } from "../middlewares/load-tenant.js";
 import { MEDIA_CONTENT_TYPES } from "../media/media-store.js";
@@ -18,7 +19,7 @@ export class AdminController {
   constructor(private readonly service: AdminService) {}
 
   saveBusiness = async (req: Request, res: Response): Promise<void> => {
-    res.json(await this.service.saveBusiness(tenantOf(req), req.body));
+    res.json(await this.service.saveBusiness(tenantOf(req), parseBusiness(req.body)));
   };
 
   listMedia = async (req: Request, res: Response): Promise<void> => {

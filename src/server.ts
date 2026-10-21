@@ -18,7 +18,8 @@ import { PgServiceRepository } from "./repositories/pg-service-repository.js";
 import { PgTenantRepository } from "./repositories/pg-tenant-repository.js";
 import { AccountService } from "./services/account-service.js";
 import { AdminService } from "./services/admin-service.js";
-import { BookingService, type Clock } from "./services/booking-service.js";
+import { BookingService } from "./services/booking-service.js";
+import { systemClock as clock } from "./utils/clock.js";
 
 const MINUTE = 60_000;
 
@@ -30,14 +31,6 @@ const owners = new PgOwnerRepository(pool);
 const services = new PgServiceRepository(pool);
 const professionals = new PgProfessionalRepository(pool);
 const bookings = new PgBookingRepository(pool);
-
-const clock: Clock = {
-  now: () => new Date(),
-  today: (timeZone) =>
-    new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(
-      new Date(),
-    ),
-};
 
 // The platform key is derived from the platform token, so rotating the token ends platform sessions.
 const platformKey =

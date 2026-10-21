@@ -4,8 +4,9 @@ import { DEFAULT_BUSINESS } from "../domain/defaults.js";
 import type { Booking, NewBooking, Professional, Service } from "../domain/types.js";
 import type { Tenant } from "../domain/tenant.js";
 import type { BookingRepository, ProfessionalRepository, ServiceRepository } from "../repositories/types.js";
-import { BookingService, type Clock } from "../services/booking-service.js";
+import { BookingService } from "../services/booking-service.js";
 import { AppError } from "../utils/app-error.js";
+import type { Clock } from "../utils/clock.js";
 
 const MONDAY = "2030-01-07"; // a Monday, open 09:00 to 19:00 in the default hours
 const SUNDAY = "2030-01-06"; // closed
@@ -87,10 +88,8 @@ class InMemoryProfessionals implements ProfessionalRepository {
 class InMemoryBookings implements BookingRepository {
   readonly items: (Booking & { tenantId: number })[] = [];
 
-  async findByProfessionalAndDate(tenantId: number, professionalId: number, isoDate: string): Promise<Booking[]> {
-    return this.items.filter(
-      (booking) => booking.tenantId === tenantId && booking.professionalId === professionalId && booking.date === isoDate,
-    );
+  async findByDate(tenantId: number, isoDate: string): Promise<Booking[]> {
+    return this.items.filter((booking) => booking.tenantId === tenantId && booking.date === isoDate);
   }
 
   async create(tenantId: number, booking: NewBooking): Promise<Booking> {
