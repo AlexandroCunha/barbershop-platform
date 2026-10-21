@@ -63,25 +63,32 @@ Run the app under a process manager (systemd, or pm2) so it restarts after a cra
 
 Then open `https://your-domain/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, and create the first barbershop.
 
-## Railway
+## Render and Neon
 
-The repository includes `railway.json`. It sets the build command, a start command that runs the migrations and then the app, and the health check at `/api/health`.
+This is the setup used for online tests. The app runs on Render, and the database is PostgreSQL 17 on Neon. The repository includes `render.yaml`, a Render blueprint with the build, the start command (migrations, then the app), the health check and the environment variables.
 
-1. Create a project. Add **PostgreSQL** from the database menu.
-2. Add a service from the GitHub repository `AlexandroCunha/barbearia`.
-3. In the service's **Variables**, set:
-   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (a reference, so it stays in sync with the database)
-   - `SESSION_SECRET` and `PLATFORM_ADMIN_TOKEN`, generated as described above
-   - `NODE_ENV` = `production`
-   - `TRUST_PROXY` = `1`, because Railway's proxy sits in front of the app
-4. In **Settings > Networking**, generate a public domain.
-5. Deploy. Then open `https://<your-domain>/platform` and create the first barbershop.
+### 1. Database (Neon)
 
-Things to know before you rely on it:
+1. Create a project in Neon with PostgreSQL 17, in the region closest to the app (for example `aws-eu-west-2` for Frankfurt or London).
+2. Copy the connection string from the Neon console. Use `sslmode=verify-full` in it, so the driver stays on the strict SSL mode.
+3. Leave the `neondb` database as it is. The migrations create the tables on first start.
 
-- **Photos are lost on every deploy** while they are on the service's disk. For a test that needs photos to last, set `MEDIA_STORAGE=s3` with an R2 bucket (see [Cloudflare R2](#cloudflare-r2)), or attach a volume to the app's `media` folder.
-- **Migrations run on every start.** They are safe to repeat, but with several replicas they could race. Run the service with one replica until you add a pre-deploy step.
-- **`DATABASE_URL` uses Railway's private network**, so it works from the app but not from your computer. To run `npm run db:migrate` from your machine, use the database's public URL instead.
+### 2. Application (Render)
+
+1. In Render, choose **New > Blueprint** and select the repository `AlexandroCunha/barbearia`.
+2. Render reads `render.yaml` and asks for three values, which are not stored in git:
+   - `DATABASE_URL`: the Neon connection string from step 1.
+   - `SESSION_SECRET`: generate with `openssl rand -hex 32`.
+   - `PLATFORM_ADMIN_TOKEN`: generate with `openssl rand -hex 24`.
+3. Apply the blueprint. The first deploy runs the migrations and then starts the app.
+4. Open `https://<your-service>.onrender.com/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, and create the first barbershop.
+
+### Limits of the free plan
+
+- **Photos are lost on every deploy and restart.** The free plan has no disk that persists. For tests that need photos to last, set `MEDIA_STORAGE=s3` with an R2 bucket (see [Cloudflare R2](#cloudflare-r2)).
+- **Memory is 512 MB.** Each password check uses about 128 MB, so several sign-ins at the same moment can exhaust it. If that happens, move the service to a paid instance.
+- **The service sleeps after 15 minutes without traffic**, and the first request after that is slow.
+- **Migrations run on every start.** They are safe to repeat, but with several instances they could race. Keep one instance until you add a pre-deploy step.
 
 ## Upgrades
 
