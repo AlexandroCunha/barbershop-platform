@@ -32,6 +32,10 @@ export function createApp(deps: ApiDependencies, options: AppOptions): express.E
     res.setHeader("Cache-Control", "no-store");
     next();
   });
+  // Hosts poll this to decide whether an instance is up. It does not touch the database.
+  app.get("/api/health", (_req: Request, res: Response) => {
+    res.json({ ok: true });
+  });
   app.use("/api", createApiRouter(deps));
   app.use("/api", (_req: Request, res: Response) => {
     res.status(404).json({ error: "Not found" });

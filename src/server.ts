@@ -6,6 +6,7 @@ import { OwnerController } from "./controllers/owner-controller.js";
 import { PlatformController } from "./controllers/platform-controller.js";
 import { SiteController } from "./controllers/site-controller.js";
 import { loadConfig } from "./config/env.js";
+import { loadLocalEnv } from "./config/load-env.js";
 import { MEDIA_DIR } from "./config/paths.js";
 import { createPool } from "./db/pool.js";
 import { requireOwner } from "./middlewares/require-owner.js";
@@ -28,6 +29,7 @@ import { systemClock as clock } from "./utils/clock.js";
 
 const MINUTE = 60_000;
 
+loadLocalEnv();
 const config = loadConfig();
 const pool = createPool(config.databaseUrl);
 

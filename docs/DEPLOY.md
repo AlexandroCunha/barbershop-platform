@@ -63,6 +63,26 @@ Run the app under a process manager (systemd, or pm2) so it restarts after a cra
 
 Then open `https://your-domain/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, and create the first barbershop.
 
+## Railway
+
+The repository includes `railway.json`. It sets the build command, a start command that runs the migrations and then the app, and the health check at `/api/health`.
+
+1. Create a project. Add **PostgreSQL** from the database menu.
+2. Add a service from the GitHub repository `AlexandroCunha/barbearia`.
+3. In the service's **Variables**, set:
+   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (a reference, so it stays in sync with the database)
+   - `SESSION_SECRET` and `PLATFORM_ADMIN_TOKEN`, generated as described above
+   - `NODE_ENV` = `production`
+   - `TRUST_PROXY` = `1`, because Railway's proxy sits in front of the app
+4. In **Settings > Networking**, generate a public domain.
+5. Deploy. Then open `https://<your-domain>/platform` and create the first barbershop.
+
+Things to know before you rely on it:
+
+- **Photos are lost on every deploy** while they are on the service's disk. For a test that needs photos to last, set `MEDIA_STORAGE=s3` with an R2 bucket (see [Cloudflare R2](#cloudflare-r2)), or attach a volume to the app's `media` folder.
+- **Migrations run on every start.** They are safe to repeat, but with several replicas they could race. Run the service with one replica until you add a pre-deploy step.
+- **`DATABASE_URL` uses Railway's private network**, so it works from the app but not from your computer. To run `npm run db:migrate` from your machine, use the database's public URL instead.
+
 ## Upgrades
 
 1. Back up the database and the photos (see [Backups](#backups)).

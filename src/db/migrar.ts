@@ -1,15 +1,16 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { loadConfig } from "../config/env.js";
+import { loadLocalEnv } from "../config/load-env.js";
+import { MIGRATIONS_DIR } from "../config/paths.js";
 import { createPool } from "./pool.js";
-
-const MIGRATIONS_DIR = path.resolve("db/migrations");
 
 /**
  * Applies every migration file not yet recorded in schema_migrations, in name
  * order. Each file runs in its own transaction, so a failed file changes nothing.
  */
 async function migrate(): Promise<void> {
+  loadLocalEnv();
   const pool = createPool(loadConfig().databaseUrl);
   const client = await pool.connect();
 
