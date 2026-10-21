@@ -31,3 +31,10 @@ test("rejects hours that close before they open", () => {
 test("rejects a hero image that is a path rather than a media file name", () => {
   assert.throws(() => parseBusiness({ ...valid, heroImage: "../secrets.txt" }));
 });
+
+test("accepts an empty Instagram handle but rejects one that would change the link's path", () => {
+  assert.equal(parseBusiness({ ...valid, instagram: "" }).instagram, "");
+  assert.throws(() => parseBusiness({ ...valid, instagram: "north/gate" }));
+  assert.throws(() => parseBusiness({ ...valid, instagram: "north?x=1" }));
+  assert.throws(() => parseBusiness({ ...valid, instagram: "north gate" }));
+});

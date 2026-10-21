@@ -66,6 +66,20 @@ export function parseUrlOrEmpty(value: unknown, field: string): string {
   return url;
 }
 
+const INSTAGRAM_HANDLE_PATTERN = /^[A-Za-z0-9._]{1,30}$/;
+
+/**
+ * An Instagram handle, without the "@". Anything else is refused, because the site builds
+ * the link as instagram.com/<handle> and a "/" or "?" would change where it points.
+ */
+export function parseInstagramHandle(value: unknown): string {
+  const handle = parseText(value, "instagram", 60).replace(/^@/, "");
+  if (handle && !INSTAGRAM_HANDLE_PATTERN.test(handle)) {
+    fail("instagram must be an Instagram handle: letters, digits, dots and underscores only");
+  }
+  return handle;
+}
+
 export function parseMediaNameOrEmpty(value: unknown, field: string): string {
   const name = parseText(value, field, 120);
   if (name && !isMediaFileName(name)) fail(`${field} must be a file name from the media folder`);
@@ -131,7 +145,7 @@ export function parseBusiness(input: unknown): Business {
       country: parseText(address.country, "address.country", 80),
     },
     mapsUrl: parseUrlOrEmpty(input.mapsUrl, "mapsUrl"),
-    instagram: parseText(input.instagram, "instagram", 60).replace(/^@/, ""),
+    instagram: parseInstagramHandle(input.instagram),
     hours: parseHours(input.hours),
     heroImage: parseMediaNameOrEmpty(input.heroImage, "heroImage"),
     timeZone,

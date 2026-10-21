@@ -1,4 +1,4 @@
-import express, { type Request, type Response } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import path from "node:path";
 import { CLIENT_DIR } from "./config/paths.js";
 import { errorHandler } from "./middlewares/error-handler.js";
@@ -25,6 +25,11 @@ export function createApp(deps: ApiDependencies, options: AppOptions): express.E
 
   app.use(securityHeaders({ hsts: options.secureCookies }));
   app.use(express.json({ limit: "64kb" }));
+  // Shop and owner responses are personal, so browsers and shared caches must not keep them.
+  app.use("/api", (_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
   app.use("/api", createApiRouter(deps));
   app.use("/api", (_req: Request, res: Response) => {
     res.status(404).json({ error: "Not found" });
