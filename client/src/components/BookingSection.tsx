@@ -197,69 +197,32 @@ export function BookingSection({
 
             <form className="booking-form" onSubmit={handleSubmit} noValidate aria-busy={submitting}>
               {step === 0 && (
-                <>
-                  <fieldset>
-                    <legend>Choose a service</legend>
-                    {!services && !loadError && <p className="status">Loading services…</p>}
-                    <div className="option-list">
-                      {services?.map((item) => (
-                        <label key={item.id} className={`option${serviceId === item.id ? " is-selected" : ""}`}>
-                          <input
-                            type="radio"
-                            name="service"
-                            value={item.id}
-                            checked={serviceId === item.id}
-                            onChange={() => onServiceChange(item.id)}
-                          />
-                          <span className="option-main">
-                            <span className="option-title">{item.name}</span>
-                            {item.description && <span className="muted">{item.description}</span>}
-                          </span>
-                          <span className="option-side">
-                            <span className="option-price">{formatPrice(item.priceCents, business.currency)}</span>
-                            <span className="muted">{formatDuration(item.durationMinutes)}</span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    <FieldError id="err-service" message={errors.service} />
-                  </fieldset>
-
-                  <fieldset>
-                    <legend>Choose a barber (optional)</legend>
-                    <p className="muted">Skip this and you will choose your barber once you have picked a time.</p>
-                    <div className="option-list">
-                      <label className={`option${professionalId === undefined ? " is-selected" : ""}`}>
+                <fieldset>
+                  <legend>Choose a service</legend>
+                  {!services && !loadError && <p className="status">Loading services…</p>}
+                  <div className="option-list">
+                    {services?.map((item) => (
+                      <label key={item.id} className={`option${serviceId === item.id ? " is-selected" : ""}`}>
                         <input
                           type="radio"
-                          name="barber"
-                          value=""
-                          checked={professionalId === undefined}
-                          onChange={() => onProfessionalChange(undefined)}
+                          name="service"
+                          value={item.id}
+                          checked={serviceId === item.id}
+                          onChange={() => onServiceChange(item.id)}
                         />
                         <span className="option-main">
-                          <span className="option-title">No preference</span>
-                          <span className="muted">We will show you who is free at your time.</span>
+                          <span className="option-title">{item.name}</span>
+                          {item.description && <span className="muted">{item.description}</span>}
+                        </span>
+                        <span className="option-side">
+                          <span className="option-price">{formatPrice(item.priceCents, business.currency)}</span>
+                          <span className="muted">{formatDuration(item.durationMinutes)}</span>
                         </span>
                       </label>
-                      {professionals?.map((person) => (
-                        <label key={person.id} className={`option${professionalId === person.id ? " is-selected" : ""}`}>
-                          <input
-                            type="radio"
-                            name="barber"
-                            value={person.id}
-                            checked={professionalId === person.id}
-                            onChange={() => onProfessionalChange(person.id)}
-                          />
-                          <span className="option-main">
-                            <span className="option-title">{person.name}</span>
-                            {person.specialties.length > 0 && <span className="muted">{person.specialties.join(" · ")}</span>}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                </>
+                    ))}
+                  </div>
+                  <FieldError id="err-service" message={errors.service} />
+                </fieldset>
               )}
 
               {step === 1 && (
