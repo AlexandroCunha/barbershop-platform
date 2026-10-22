@@ -63,13 +63,26 @@ The build needs the development dependencies (TypeScript, Vite and the type pack
 
 Run the app under a process manager (systemd, or pm2) so it restarts after a crash or reboot. Migrations are applied once each and recorded in `schema_migrations`, so running `npm run db:migrate` again is safe.
 
-Create a developer account, then open `https://your-domain/platform` and create the first barbershop:
+Create the first barbershop from the command line. Run it in your own terminal, with the connection string copied from the database console, and do not paste that string anywhere else:
 
 ```bash
-DATABASE_URL="<the production connection string>" npm run developer:create -- you@example.com
+DATABASE_URL="<the production connection string>" npm run shop -- create northgate --name "Northgate Barber" --owner-email you@example.com
 ```
 
-The command asks for the password twice and does not show it. Run it in your own terminal, with the connection string copied from the database console, and do not paste it anywhere else.
+The command asks for the owner's password twice and does not show it. The shop's owner area is then at `/northgate/admin`.
+
+## Operating shops
+
+There is no web area for operators. Each shop is managed from the command line, with the same `DATABASE_URL`:
+
+```bash
+DATABASE_URL="<the production connection string>" npm run shop -- create <address> --name "<Name>" --owner-email <email>
+DATABASE_URL="<the production connection string>" npm run shop -- license <address> active
+DATABASE_URL="<the production connection string>" npm run shop -- license <address> trial --trial-ends 2026-12-31
+DATABASE_URL="<the production connection string>" npm run shop -- license <address> suspended
+```
+
+Licence states are `trial`, `active` and `suspended`. Customers can book only while the licence allows it. Owners always keep their area, so they can see why booking is paused.
 
 ## Render and Neon
 
@@ -88,7 +101,7 @@ This is the setup used for online tests. The app runs on Render, and the databas
    - `DATABASE_URL`: the Neon connection string from step 1.
    - `SESSION_SECRET`: generate with `openssl rand -hex 32`.
 3. Apply the blueprint. The first deploy runs the migrations and then starts the app.
-4. Create a developer account (see [First deployment](#first-deployment)), then open `https://<your-service>.onrender.com/platform` and create the first barbershop.
+4. Create the first barbershop from the command line (see [First deployment](#first-deployment)), then open `https://<your-service>.onrender.com`.
 
 ### Limits of the free plan
 
@@ -137,7 +150,7 @@ Running several servers is supported. The pieces that used to live in one proces
 ## Checklist
 
 - [ ] `NODE_ENV=production`, and the site is served over HTTPS only.
-- [ ] `SESSION_SECRET` is a long random value, not the example. Developer accounts have strong passwords.
+- [ ] `SESSION_SECRET` is a long random value, not the example. Owner passwords are long too.
 - [ ] `TRUST_PROXY=1` only if the proxy is the only route in, and unset otherwise.
 - [ ] The app's port is not reachable from the internet.
 - [ ] With several servers: `MEDIA_STORAGE=s3`, and the duplicate-name check passed.

@@ -1,10 +1,8 @@
-import { createHmac } from "node:crypto";
 import { createApp } from "./app.js";
 import { AdminController } from "./controllers/admin-controller.js";
 import { BookingController } from "./controllers/booking-controller.js";
 import { BarberController } from "./controllers/barber-controller.js";
 import { OwnerController } from "./controllers/owner-controller.js";
-import { PlatformController } from "./controllers/platform-controller.js";
 import { SiteController } from "./controllers/site-controller.js";
 import { loadConfig } from "./config/env.js";
 import { loadLocalEnv } from "./config/load-env.js";
@@ -12,13 +10,11 @@ import { MEDIA_DIR } from "./config/paths.js";
 import { createPool } from "./db/pool.js";
 import { requireOwner } from "./middlewares/require-owner.js";
 import { requireBarber } from "./middlewares/require-barber.js";
-import { requirePlatform } from "./middlewares/require-platform.js";
 import { rateLimit } from "./middlewares/rate-limit.js";
 import { LocalMediaStorage } from "./media/local-media-storage.js";
 import { createS3MediaStorage } from "./media/s3-media-storage.js";
 import { PgBarberAccountRepository } from "./repositories/pg-barber-account-repository.js";
 import { PgBookingRepository } from "./repositories/pg-booking-repository.js";
-import { PgDeveloperRepository } from "./repositories/pg-developer-repository.js";
 import { PgRateLimitStore } from "./repositories/pg-rate-limit-store.js";
 import { PgOwnerRepository } from "./repositories/pg-owner-repository.js";
 import { PgProfessionalRepository } from "./repositories/pg-professional-repository.js";
@@ -43,13 +39,9 @@ const owners = new PgOwnerRepository(pool);
 const services = new PgServiceRepository(pool);
 const professionals = new PgProfessionalRepository(pool);
 const bookings = new PgBookingRepository(pool);
-const developers = new PgDeveloperRepository(pool);
 const barberAccounts = new PgBarberAccountRepository(pool);
 const sessions = new SessionService(new PgSessionRepository(pool), clock);
 const barbers = new BarberService(barberAccounts, professionals, services, bookings, sessions, clock);
-
-// Platform sessions are signed with a key derived from the session secret, separate from the owner key.
-const platformKey = createHmac("sha256", config.sessionSecret).update("platform-session").digest("base64url");
 
 const accounts = new AccountService(tenants, owners, clock);
 const media = config.media.kind === "s3" ? createS3MediaStorage(config.media.settings) : new LocalMediaStorage(MEDIA_DIR);
@@ -76,16 +68,7 @@ const app = createApp(
       secureCookies: config.secureCookies,
       clock,
     }),
-    platform: new PlatformController({
-      developers,
-      platformKey,
-      accounts,
-      sessions,
-      secureCookies: config.secureCookies,
-      clock,
-    }),
     requireOwner: requireOwner(config.sessionSecret, owners, sessions),
-    requirePlatform: requirePlatform(platformKey, sessions),
     loginLimit: rateLimit({
       bucket: "sign-in",
       windowMs: 15 * MINUTE,
@@ -106,5 +89,4 @@ const app = createApp(
 
 app.listen(config.port, () => {
   console.log(`Barbershop Platform running at http://localhost:${config.port}`);
-  console.log("Platform area: /platform");
 });

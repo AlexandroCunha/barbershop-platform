@@ -3,10 +3,9 @@
  *   1 owner, 3 new barbers, 6 customers.
  *
  * It talks to a running server over HTTP and checks the database directly.
- * Usage: npm run simulate   (server must be running; .env must hold SIM_DEVELOPER_EMAIL and
- *   SIM_DEVELOPER_PASSWORD, for a developer account created with npm run developer:create)
+ * Usage: npm run simulate   (server must be running; .env must hold DATABASE_URL)
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 
 // psql is used to read the database directly. Postgres.app ships it outside the PATH.
@@ -87,19 +86,15 @@ const YESTERDAY = (() => {
 })();
 
 // ---------------------------------------------------------------------------
-// Platform owner creates the shop.
+// The operator creates the shop with the shop command, as it is done in production.
 // ---------------------------------------------------------------------------
-const platform = await call("POST", "/api/platform/session", {
-  body: { email: env.SIM_DEVELOPER_EMAIL, password: env.SIM_DEVELOPER_PASSWORD },
-});
-log("platform", "signs in as a developer", platform.status === 200, `HTTP ${platform.status}`);
-const platformCookie = platform.cookie;
-
-const created = await call("POST", "/api/platform/tenants", {
-  cookie: platformCookie,
-  body: { name: "Simulation Barbers", slug, ownerEmail: OWNER_EMAIL, ownerPassword: OWNER_PASSWORD },
-});
-log("platform", "creates a barbershop with a 14-day trial", created.status === 201 && created.json.state === "trial", `HTTP ${created.status}`);
+const childEnv = { ...process.env, DATABASE_URL: env.DATABASE_URL };
+const created = spawnSync(
+  process.execPath,
+  ["dist/scripts/shop.js", "create", slug, "--name", "Simulation Barbers", "--owner-email", OWNER_EMAIL],
+  { input: `${OWNER_PASSWORD}\n${OWNER_PASSWORD}\n`, env: childEnv, encoding: "utf8" },
+);
+log("operator", "creates a barbershop with the shop command", created.status === 0 && created.stdout.includes("14-day trial"), (created.stderr || created.stdout).trim());
 
 // ---------------------------------------------------------------------------
 // Owner agent: sets up the shop.
@@ -384,17 +379,18 @@ log(OWNER, "this device stays signed in", refreshed.status === 200);
 ownerCookie = changed.cookie;
 
 // ---------------------------------------------------------------------------
-// Platform suspends the shop: customers are stopped, owner can still look.
+// The operator suspends the shop: customers are stopped, owner can still look.
 // ---------------------------------------------------------------------------
-const shopId = (await call("GET", "/api/platform/tenants", { cookie: platformCookie })).json.find((t) => t.slug === slug).id;
-await call("PATCH", `/api/platform/tenants/${shopId}/license`, { cookie: platformCookie, body: { status: "suspended", trialEndsAt: null, paidUntil: null } });
+const setLicense = (status) =>
+  spawnSync(process.execPath, ["dist/scripts/shop.js", "license", slug, status], { env: childEnv, encoding: "utf8" });
+setLicense("suspended");
 const suspendedBooking = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Late Customer", { serviceId: SERVICE_CLASSIC, date: MONDAY, time: "12:00" }) });
-log("platform", "suspending the shop stops new bookings", suspendedBooking.status === 403, suspendedBooking.json?.error);
+log("operator", "suspending the shop stops new bookings", suspendedBooking.status === 403, suspendedBooking.json?.error);
 const ownerView = await call("GET", `/api/t/${slug}/owner/session`, { cookie: ownerCookie });
 log(OWNER, "still sees the suspension and can sign in", ownerView.status === 200 && ownerView.json.license.state === "suspended");
-await call("PATCH", `/api/platform/tenants/${shopId}/license`, { cookie: platformCookie, body: { status: "active", trialEndsAt: null, paidUntil: null } });
+setLicense("active");
 const reopened = await call("GET", `/api/t/${slug}/availability?serviceId=${SERVICE_CLASSIC}&date=${MONDAY}`);
-log("platform", "reactivating the shop reopens bookings", reopened.status === 200 && reopened.json.times.length > 0);
+log("operator", "reactivating the shop reopens bookings", reopened.status === 200 && reopened.json.times.length > 0);
 
 // ---------------------------------------------------------------------------
 // Summary.

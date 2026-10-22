@@ -104,7 +104,7 @@ class Sessions implements SessionRepository {
   async findActive(id: string, now: Date): Promise<SessionRecord | null> {
     const row = this.rows.find((candidate) => candidate.id === id);
     if (!row || row.revoked || row.expiresAt <= now) return null;
-    return { id: row.id, kind: row.kind, tenantId: row.tenantId, ownerId: row.ownerId, developerId: row.developerId, barberAccountId: row.barberAccountId, expiresAt: row.expiresAt };
+    return { id: row.id, kind: row.kind, tenantId: row.tenantId, ownerId: row.ownerId, barberAccountId: row.barberAccountId, expiresAt: row.expiresAt };
   }
 
   async revoke(id: string): Promise<void> {

@@ -17,7 +17,7 @@
     "test": "tsc -p tsconfig.json && node --test --test-concurrency=1 \"dist/test/**/*.test.js\"",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit",
     "simulate": "node scripts/simulate-agents.mjs",
-    "developer:create": "node dist/scripts/create-developer.js",
+    "shop": "node dist/scripts/shop.js",
     "banners": "node scripts/build-banners.mjs"
   },
   "dependencies": {

@@ -1,7 +1,6 @@
 /**
  * Works out which screen the address points to:
  *   /                 the home shop's booking page (or a notice when there is none)
- *   /platform         platform owner
  *   /:slug            a barbershop's website
  *   /:slug/admin      that barbershop's owner area
  *   /:slug/barber     that barbershop's barber area (own bookings only)
@@ -13,7 +12,6 @@ const RESERVED = new Set(["api", "admin", "platform", "media", "assets", "www", 
 
 export type Route =
   | { kind: "landing" }
-  | { kind: "platform" }
   | { kind: "shop"; slug: string; view: "site" | "admin" | "barber" }
   | { kind: "not-found" };
 
@@ -25,7 +23,6 @@ export function parseRoute(pathname: string): Route {
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length === 0) return { kind: "landing" };
-  if (segments.length === 1 && segments[0] === "platform") return { kind: "platform" };
 
   const [slug, section, ...rest] = segments;
   if (slug === undefined || rest.length > 0 || !isShopSlug(slug)) return { kind: "not-found" };

@@ -1660,79 +1660,47 @@ textarea {
   }
 }
 
-/* Access menu: a quiet entry in the footer that opens a side panel. */
-.access-toggle {
-  margin-left: auto;
-  padding: 0.35rem 0.8rem;
+/* Owner menu: top-right of the site, holds the way into the site customisation. */
+.owner-menu {
+  position: relative;
+  flex: none;
+}
+
+.owner-menu-toggle {
+  padding: 0.45rem 0.9rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: transparent;
-  color: var(--muted);
+  color: var(--charcoal);
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
 }
 
-.access-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(23, 23, 23, 0.35);
-  z-index: 40;
-}
-
-.access-panel {
-  color: var(--charcoal);
-  font-family: var(--font-sans);
-  opacity: 1;
-  position: fixed;
-  top: 0;
+.owner-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
   right: 0;
-  bottom: 0;
-  width: min(320px, 85vw);
-  padding: 1.25rem 1.5rem;
+  z-index: 30;
+  display: grid;
+  min-width: 200px;
+  padding: 0.5rem;
   background: var(--paper-card);
-  border-left: 1px solid var(--line);
-  box-shadow: -12px 0 32px rgba(23, 23, 23, 0.12);
-  z-index: 41;
-  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(23, 23, 23, 0.12);
 }
 
-.access-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.access-head p {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: 1.5rem;
-}
-
-.access-close {
-  border: 0;
-  background: transparent;
+.owner-menu-panel a {
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
   color: var(--charcoal);
-  font-size: 1.6rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.access-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.access-links a {
-  display: block;
-  opacity: 1;
-  color: var(--charcoal);
-  font-weight: 600;
   text-decoration: none;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid var(--line);
+}
+
+.owner-menu-panel a:hover,
+.owner-menu-panel a:focus-visible {
+  background: var(--paper-tint);
 }
 
 /* Barber area: sign-in and the list of upcoming bookings. */

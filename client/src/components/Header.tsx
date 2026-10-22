@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useBusiness } from "../tenant-context";
+import { OwnerMenu } from "./OwnerMenu";
 
 export function Header() {
   const business = useBusiness();
@@ -32,6 +33,8 @@ export function Header() {
         <a className="btn btn-dark header-cta" href="#book">
           Book appointment
         </a>
+
+        <OwnerMenu />
       </div>
     </header>
   );

@@ -1,19 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import { OWNER_COOKIE, PLATFORM_COOKIE } from "../auth/session-config.js";
+import { OWNER_COOKIE } from "../auth/session-config.js";
 import { issueToken } from "../auth/tokens.js";
 import { DEFAULT_BUSINESS } from "../domain/defaults.js";
 import type { Tenant } from "../domain/tenant.js";
 import { requireOwner } from "../middlewares/require-owner.js";
-import { requirePlatform } from "../middlewares/require-platform.js";
 import type { OwnerAccount, OwnerRepository, SessionRecord, SessionRepository } from "../repositories/types.js";
 import { SessionService } from "../services/session-service.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
 
 const SECRET = "a-test-secret-that-is-long-enough-to-use";
-const PLATFORM_KEY = "a-platform-key-derived-only-for-tests";
 const START = new Date("2030-01-01T10:00:00Z");
 
 const shop: Tenant = {
@@ -44,7 +42,6 @@ class InMemorySessions implements SessionRepository {
       kind: row.kind,
       tenantId: row.tenantId,
       ownerId: row.ownerId,
-      developerId: row.developerId,
       barberAccountId: row.barberAccountId,
       expiresAt: row.expiresAt,
     };
@@ -176,19 +173,4 @@ test("an owner token without a session record, or with an unknown one, is refuse
     version: 1,
   });
   assertUnauthorised(await run(guard, requestWith(OWNER_COOKIE, unknown)));
-});
-
-test("a platform session works until it is revoked, and a platform token cannot open owner areas", async () => {
-  const { sessions } = setup();
-  const opened = await sessions.openPlatformSession(5);
-  const token = issueToken(PLATFORM_KEY, { kind: "platform", exp: opened.expiresAt, sid: opened.id });
-  const guard = requirePlatform(PLATFORM_KEY, sessions);
-
-  assert.equal(await run(guard, requestWith(PLATFORM_COOKIE, token)), "passed");
-
-  await sessions.revoke(opened.id);
-  assertUnauthorised(await run(guard, requestWith(PLATFORM_COOKIE, token)));
-
-  const ownerToken = issueToken(SECRET, { kind: "owner", exp: opened.expiresAt, sid: opened.id, tenantId: 1, ownerId: 7, version: 1 });
-  assertUnauthorised(await run(requireOwner(SECRET, new InMemoryOwners(), sessions), requestWith(OWNER_COOKIE, ownerToken)));
 });

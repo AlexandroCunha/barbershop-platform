@@ -5,7 +5,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
  * Tokens are not encrypted, so the payload must hold nothing secret.
  */
 export interface TokenPayload {
-  kind: "owner" | "platform" | "barber";
+  kind: "owner" | "barber";
   /** Unix time in seconds after which the token is no longer valid. */
   exp: number;
   tenantId?: number;
@@ -32,7 +32,7 @@ function sign(secret: string, body: string): string {
 function isPayload(value: unknown): value is TokenPayload {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as Partial<TokenPayload>;
-  return (candidate.kind === "owner" || candidate.kind === "platform" || candidate.kind === "barber") && typeof candidate.exp === "number";
+  return (candidate.kind === "owner" || candidate.kind === "barber") && typeof candidate.exp === "number";
 }
 
 export function issueToken(secret: string, payload: TokenPayload): string {

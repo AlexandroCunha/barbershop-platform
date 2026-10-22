@@ -1,13 +1,10 @@
-import { AccessMenu } from "../components/AccessMenu";
-
 /** Shown while no barbershop has been created, so there is nothing to book yet. */
 export function NoHomeShop({ message }: { message?: string | null }) {
   return (
     <main className="container static-page">
       <p className="eyebrow">Barbershop Platform</p>
       <h1>No barbershop is published yet</h1>
-      <p className="lede">{message ?? "Create the first barbershop in the developer area, and it will open here."}</p>
-      <AccessMenu />
+      <p className="lede">{message ?? "Online booking will open here soon."}</p>
     </main>
   );
 }

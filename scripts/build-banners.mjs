@@ -88,11 +88,6 @@ const SLIDES = [
     en: ["Services", "Prices, durations and descriptions"],
     pt: ["Serviços", "Preços, durações e descrições"],
   },
-  {
-    file: "09-platform-barbershops.png",
-    en: ["Platform owner", "Every shop and its license in one place"],
-    pt: ["Dono da plataforma", "Todas as barbearias e suas licenças em um lugar"],
-  },
 ];
 
 const COPY = {
@@ -105,7 +100,7 @@ const COPY = {
     ticker: "Haircut · Skin fade · Beard trim · Haircut and beard · Book online · Arrive when it suits you",
     carouselEyebrow: "BARBEARIA · PREVIEW",
     carouselTitle: "Barbearia screenshots",
-    carouselDesc: "Screenshots of the website, booking, owner area and platform area, shown in turn.",
+    carouselDesc: "Screenshots of the website, booking and owner area, shown in turn.",
   },
   pt: {
     eyebrow: "AGENDAMENTO PARA BARBEARIAS",
@@ -116,7 +111,7 @@ const COPY = {
     ticker: "Corte · Degradê · Barba · Corte e barba · Agende online · Chegue no seu horário",
     carouselEyebrow: "BARBEARIA · PRÉVIA",
     carouselTitle: "Capturas de tela da Barbearia",
-    carouselDesc: "Capturas do site, do agendamento, da área do dono e da área da plataforma, em sequência.",
+    carouselDesc: "Capturas do site, do agendamento e da área do dono, em sequência.",
   },
 };
 

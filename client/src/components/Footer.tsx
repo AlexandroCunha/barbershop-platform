@@ -1,8 +1,7 @@
 import { useTenant } from "../tenant-context";
-import { AccessMenu } from "./AccessMenu";
 
 export function Footer() {
-  const { slug, business } = useTenant();
+  const { business } = useTenant();
   const year = new Date().getFullYear();
 
   return (
@@ -25,8 +24,6 @@ export function Footer() {
             Instagram
           </a>
         )}
-
-        <AccessMenu ownerSlug={slug} />
       </div>
       <p className="copyright">
         © {year} {business.name}

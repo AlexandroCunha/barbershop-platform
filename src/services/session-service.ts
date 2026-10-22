@@ -24,13 +24,8 @@ export class SessionService {
       kind: "owner",
       tenantId: owner.tenantId,
       ownerId: owner.ownerId,
-      developerId: null,
       barberAccountId: null,
     });
-  }
-
-  openPlatformSession(developerId: number): Promise<OpenedSession> {
-    return this.open({ kind: "platform", tenantId: null, ownerId: null, developerId, barberAccountId: null });
   }
 
   openBarberSession(barber: { tenantId: number; barberAccountId: number }): Promise<OpenedSession> {
@@ -38,7 +33,6 @@ export class SessionService {
       kind: "barber",
       tenantId: barber.tenantId,
       ownerId: null,
-      developerId: null,
       barberAccountId: barber.barberAccountId,
     });
   }

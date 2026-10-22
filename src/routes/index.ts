@@ -3,7 +3,6 @@ import type { AdminController } from "../controllers/admin-controller.js";
 import type { BarberController } from "../controllers/barber-controller.js";
 import type { BookingController } from "../controllers/booking-controller.js";
 import type { OwnerController } from "../controllers/owner-controller.js";
-import type { PlatformController } from "../controllers/platform-controller.js";
 import type { SiteController } from "../controllers/site-controller.js";
 import { MEDIA_CONTENT_TYPES } from "../media/media-storage.js";
 import { loadTenant } from "../middlewares/load-tenant.js";
@@ -18,9 +17,7 @@ export interface ApiDependencies {
   requireBarber: RequestHandler;
   admin: AdminController;
   owner: OwnerController;
-  platform: PlatformController;
   requireOwner: RequestHandler;
-  requirePlatform: RequestHandler;
   /** Throttles sign-in attempts from one address. */
   loginLimit: RequestHandler;
   /** Throttles booking requests from one address. */
@@ -29,7 +26,6 @@ export interface ApiDependencies {
 
 /**
  * /api/t/:slug/...   one barbershop: public site, bookings and its owner area
- * /api/platform/...  the platform owner: barbershops and their licenses
  */
 export function createApiRouter(deps: ApiDependencies): Router {
   const router = Router();
@@ -80,21 +76,6 @@ export function createApiRouter(deps: ApiDependencies): Router {
   router.get("/home", deps.site.home);
 
   router.use("/t/:slug", shop);
-
-  // Platform owner.
-  const platform = Router();
-  platform.post("/session", deps.loginLimit, deps.platform.login);
-  platform.post("/logout", deps.platform.logout);
-
-  const platformRoutes = Router();
-  platformRoutes.use(deps.requirePlatform);
-  platformRoutes.get("/session", deps.platform.session);
-  platformRoutes.get("/tenants", deps.platform.listTenants);
-  platformRoutes.post("/tenants", deps.platform.createTenant);
-  platformRoutes.patch("/tenants/:id/license", deps.platform.setLicense);
-  platform.use(platformRoutes);
-
-  router.use("/platform", platform);
 
   return router;
 }

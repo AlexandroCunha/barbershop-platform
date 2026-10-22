@@ -22,9 +22,9 @@ test("a token verifies with its own key until it expires", () => {
 });
 
 test("a token signed with another key, or changed in transit, is rejected", () => {
-  const token = issueToken(SECRET, { kind: "platform", exp: NOW_SECONDS + 60 });
+  const token = issueToken(SECRET, { kind: "owner", exp: NOW_SECONDS + 60 });
   const [body, signature] = token.split(".") as [string, string];
-  const forgedBody = Buffer.from(JSON.stringify({ kind: "platform", exp: NOW_SECONDS + 9999 })).toString("base64url");
+  const forgedBody = Buffer.from(JSON.stringify({ kind: "owner", exp: NOW_SECONDS + 9999 })).toString("base64url");
 
   assert.equal(readToken("another-secret-that-is-also-long-enough", token, NOW_MS), null);
   assert.equal(readToken(SECRET, `${forgedBody}.${signature}`, NOW_MS), null);

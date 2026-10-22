@@ -30,7 +30,7 @@ a booking calendar and an owner area. One installation serves many shops.
 ## 👀 Take a look
 
 <p align="center">
-  <img src="docs/carousel.svg" alt="Screenshot carousel: the website, booking, the owner area and the platform area, shown in turn" width="100%">
+  <img src="docs/carousel.svg" alt="Screenshot carousel: the website, booking, the owner area, shown in turn" width="100%">
 </p>
 
 <p align="center">
@@ -42,7 +42,6 @@ a booking calendar and an owner area. One installation serves many shops.
   <a href="docs/screenshots/06-mobile-barbers.png"><img src="docs/thumbnails/06-mobile-barbers.jpg" width="100" height="66" alt="06. Mobile barbers"></a>
   <a href="docs/screenshots/07-owner-area-business.png"><img src="docs/thumbnails/07-owner-area-business.jpg" width="100" height="66" alt="07. Owner area"></a>
   <a href="docs/screenshots/08-owner-area-services.png"><img src="docs/thumbnails/08-owner-area-services.jpg" width="100" height="66" alt="08. Services"></a>
-  <a href="docs/screenshots/09-platform-barbershops.png"><img src="docs/thumbnails/09-platform-barbershops.jpg" width="100" height="66" alt="09. Platform owner"></a>
   <br><sub>Click a thumbnail to open the full screenshot.</sub>
 </p>
 
@@ -73,9 +72,9 @@ a booking calendar and an owner area. One installation serves many shops.
 </td>
     <td valign="top" width="33%">
 
-### 🏢 Platform owner
-- Create a barbershop in one form (14-day trial included)
-- Set each shop's license: trial, active or suspended
+### 🛠️ Operator
+- Create a barbershop from the command line, with a 14-day trial
+- Set each shop's licence: trial, active or suspended
 - Set trial end and paid-until dates
 
 </td>
@@ -111,8 +110,13 @@ Create the two secrets:
 openssl rand -hex 32            # SESSION_SECRET
 ```
 
-Create a developer account with `npm run developer:create -- you@example.com`, then open **`http://localhost:3100/platform`**, sign in, and add your first
-barbershop. Its website lives at `/<address>` and its owner area at `/<address>/admin`. 🎉
+Create your first barbershop from the command line, then open **`http://localhost:3100`**:
+
+```bash
+npm run shop -- create northgate --name "Northgate Barber" --owner-email you@example.com
+```
+
+The shop's website lives at `/<address>` and its owner area at `/<address>/admin`. 🎉
 
 > 💡 For development, run `npm run dev:api` and `npm run dev:web` in two terminals.
 
@@ -140,7 +144,6 @@ flowchart LR
   subgraph Browser
     Site["🌐 Customer website<br/>/:shop"]
     Owner["🧑‍💼 Owner area<br/>/:shop/admin"]
-    Platform["🏢 Platform area<br/>/platform"]
   end
 
   Browser -->|HTTPS| API
@@ -160,7 +163,7 @@ flowchart LR
   Server -->|serves| Dist["Built React app<br/>dist-client/"]
   Server -->|serves| Media["media/&lt;shop&gt;/<br/>one folder per shop"]
 
-  class Site,Owner,Platform client
+  class Site,Owner client
   class API,MW,CTRL,SVC,REPO,DOM server
   class DB data
   style Browser fill:#f3f0e9,stroke:#b77951
@@ -227,7 +230,7 @@ sequenceDiagram
 A shop's license decides whether customers can book. The owner area always stays open, so the owner
 can see the reason and fix it.
 
-| Status set by the platform owner | Customers can book? | What the owner sees |
+| Status set by the operator | Customers can book? | What the owner sees |
 | --- | :---: | --- |
 | `trial`, before the trial ends | ✅ | "Free trial: online booking is open until …" |
 | `active`, paid until a future date, or with no end date | ✅ | "Subscription active …" |
@@ -251,8 +254,8 @@ can see the reason and fix it.
 ```
 src/
   app.ts, server.ts         wiring: Express app and process start
-  routes/                   URL → handler map, shop and platform sections
-  middlewares/              shop lookup, owner and platform sessions, rate limits, headers
+  routes/                   URL → handler map, shop sections
+  middlewares/              shop lookup, owner and barber sessions, rate limits, headers
   controllers/              HTTP handlers (request → service → response)
   services/                 booking rules, account rules, owner content rules
   domain/                   pure logic: availability, opening hours, license states, slugs, defaults
@@ -262,7 +265,7 @@ src/
   media/                    per-shop photo storage
   test/                     unit tests (node:test)
 client/src/
-  pages/                    shop site, shop routing, platform area, landing and not-found
+  pages/                    home page, shop site, barber area and not-found
   components/               website sections (hero, barbers, services, booking, visit, footer)
   admin/                    owner area: business, photos, barbers, services, account
 db/migrations/              schema, applied once each and recorded in schema_migrations
@@ -278,7 +281,7 @@ media/<shop>/               each shop's photos (not committed)
 | Variable | Required | What it does |
 | --- | :---: | --- |
 | `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `SESSION_SECRET` | ✅ (32+ chars) | Signs owner and platform sessions. Changing it signs everyone out |
+| `SESSION_SECRET` | ✅ (32+ chars) | Signs owner and barber sessions. Changing it signs everyone out |
 | `PORT` | | Port for the site and API. Default `3100` |
 | `COOKIE_SECURE` | | Send cookies only over HTTPS. On by default in production |
 | `TRUST_PROXY` | | Number of reverse proxies in front of the app (usually `1`). Leave it unset without a proxy. See [deploy guide](docs/DEPLOY.md) |

@@ -9,7 +9,6 @@ import type {
   BarberProfile,
   Professional,
   Service,
-  TenantSummary,
 } from "./types";
 
 /** Fired on the window when an owner request is refused because the session has ended. */
@@ -138,21 +137,3 @@ export function tenantApi(slug: string) {
 }
 
 export type TenantApi = ReturnType<typeof tenantApi>;
-
-/** The platform owner's calls. */
-export const platformApi = {
-  session: () => send<{ ok: boolean }>("/api/platform/session"),
-
-  login: (email: string, password: string) =>
-    send<{ ok: boolean }>("/api/platform/session", json("POST", { email, password })),
-
-  logout: () => send<unknown>("/api/platform/logout", { method: "POST" }),
-
-  tenants: () => send<TenantSummary[]>("/api/platform/tenants"),
-
-  createTenant: (input: { name: string; slug: string; ownerEmail: string; ownerPassword: string }) =>
-    send<TenantSummary>("/api/platform/tenants", json("POST", input)),
-
-  setLicense: (id: number, input: { status: string; trialEndsAt: string | null; paidUntil: string | null }) =>
-    send<TenantSummary>(`/api/platform/tenants/${id}/license`, json("PATCH", input)),
-};

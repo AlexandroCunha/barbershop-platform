@@ -30,7 +30,7 @@ bonito, uma agenda de horários e uma área do dono. Uma única instalação ate
 ## 👀 Dê uma olhada
 
 <p align="center">
-  <img src="docs/carousel.pt-BR.svg" alt="Carrossel de capturas: o site, o agendamento, a área do dono e a área da plataforma, em sequência" width="100%">
+  <img src="docs/carousel.pt-BR.svg" alt="Carrossel de capturas: o site, o agendamento e a área do dono, em sequência" width="100%">
 </p>
 
 <p align="center">
@@ -42,7 +42,6 @@ bonito, uma agenda de horários e uma área do dono. Uma única instalação ate
   <a href="docs/screenshots/06-mobile-barbers.png"><img src="docs/thumbnails/06-mobile-barbers.jpg" width="100" height="66" alt="06. Barbeiros no celular"></a>
   <a href="docs/screenshots/07-owner-area-business.png"><img src="docs/thumbnails/07-owner-area-business.jpg" width="100" height="66" alt="07. Área do dono"></a>
   <a href="docs/screenshots/08-owner-area-services.png"><img src="docs/thumbnails/08-owner-area-services.jpg" width="100" height="66" alt="08. Serviços"></a>
-  <a href="docs/screenshots/09-platform-barbershops.png"><img src="docs/thumbnails/09-platform-barbershops.jpg" width="100" height="66" alt="09. Dono da plataforma"></a>
   <br><sub>Clique em uma miniatura para abrir a captura em tela cheia.</sub>
 </p>
 
@@ -73,8 +72,8 @@ bonito, uma agenda de horários e uma área do dono. Uma única instalação ate
 </td>
     <td valign="top" width="33%">
 
-### 🏢 Dono da plataforma
-- Crie uma barbearia em um formulário (com 14 dias de teste grátis)
+### 🛠️ Operação
+- Crie uma barbearia pela linha de comando, com 14 dias de teste grátis
 - Defina a licença de cada barbearia: teste, ativa ou suspensa
 - Defina a data de fim do teste e até quando está pago
 
@@ -111,8 +110,13 @@ Crie os dois segredos:
 openssl rand -hex 32            # SESSION_SECRET
 ```
 
-Crie uma conta de desenvolvedor com `npm run developer:create -- voce@exemplo.com`, depois abra **`http://localhost:3100/platform`**, entre e cadastre a
-primeira barbearia. O site dela fica em `/<endereço>` e a área do dono em `/<endereço>/admin`. 🎉
+Crie a primeira barbearia pela linha de comando, depois abra **`http://localhost:3100`**:
+
+```bash
+npm run shop -- create northgate --name "Northgate Barber" --owner-email voce@exemplo.com
+```
+
+O site dela fica em `/<endereço>` e a área do dono em `/<endereço>/admin`. 🎉
 
 > 💡 Para desenvolver, rode `npm run dev:api` e `npm run dev:web` em dois terminais.
 
@@ -140,7 +144,6 @@ flowchart LR
   subgraph Browser
     Site["🌐 Site do cliente<br/>/:shop"]
     Owner["🧑‍💼 Área do dono<br/>/:shop/admin"]
-    Platform["🏢 Área da plataforma<br/>/platform"]
   end
 
   Browser -->|HTTPS| API
@@ -160,7 +163,7 @@ flowchart LR
   Server -->|serve| Dist["App React compilado<br/>dist-client/"]
   Server -->|serve| Media["media/&lt;shop&gt;/<br/>uma pasta por barbearia"]
 
-  class Site,Owner,Platform client
+  class Site,Owner client
   class API,MW,CTRL,SVC,REPO,DOM server
   class DB data
   style Browser fill:#f3f0e9,stroke:#b77951
@@ -227,7 +230,7 @@ sequenceDiagram
 A licença da barbearia decide se os clientes podem agendar. A área do dono fica sempre aberta, para
 que ela veja o motivo e resolva.
 
-| Status definido pelo dono da plataforma | Clientes podem agendar? | O que o dono vê |
+| Status definido pela operação | Clientes podem agendar? | O que o dono vê |
 | --- | :---: | --- |
 | `trial`, antes do fim do teste | ✅ | "Teste grátis: agendamento online aberto até …" |
 | `active`, pago até uma data futura, ou sem data de fim | ✅ | "Assinatura ativa …" |
@@ -251,8 +254,8 @@ que ela veja o motivo e resolva.
 ```
 src/
   app.ts, server.ts         montagem: app Express e início do processo
-  routes/                   mapa de URL → handler, seções da barbearia e da plataforma
-  middlewares/              busca da barbearia, sessões de dono e plataforma, limites, cabeçalhos
+  routes/                   mapa de URL → handler, seções da barbearia
+  middlewares/              busca da barbearia, sessões de dono e barbeiro, limites, cabeçalhos
   controllers/              handlers HTTP (requisição → service → resposta)
   services/                 regras de agendamento, de contas e do conteúdo do dono
   domain/                   lógica pura: disponibilidade, horários, estados de licença, slugs, padrões
@@ -262,7 +265,7 @@ src/
   media/                    armazenamento de fotos por barbearia
   test/                     testes unitários (node:test)
 client/src/
-  pages/                    site da barbearia, roteamento, área da plataforma, página inicial e 404
+  pages/                    página inicial, site da barbearia, área do barbeiro e 404
   components/               seções do site (topo, barbeiros, serviços, agendamento, visita, rodapé)
   admin/                    área do dono: negócio, fotos, barbeiros, serviços, conta
 db/migrations/              esquema, aplicado uma vez cada e registrado em schema_migrations
@@ -278,7 +281,7 @@ media/<shop>/               as fotos de cada barbearia (não versionadas)
 | Variável | Obrigatória | O que faz |
 | --- | :---: | --- |
 | `DATABASE_URL` | ✅ | String de conexão com o PostgreSQL |
-| `SESSION_SECRET` | ✅ (32+ caracteres) | Assina as sessões do dono e da plataforma. Trocar desconecta todo mundo |
+| `SESSION_SECRET` | ✅ (32+ caracteres) | Assina as sessões do dono e do barbeiro. Trocar desconecta todo mundo |
 | `PORT` | | Porta do site e da API. Padrão `3100` |
 | `COOKIE_SECURE` | | Envia cookies só por HTTPS. Ligada por padrão em produção |
 | `TRUST_PROXY` | | Número de proxies reversos na frente da aplicação (geralmente `1`). Deixe sem valor se não houver proxy. Veja o [guia de deploy](docs/DEPLOY.md) |
