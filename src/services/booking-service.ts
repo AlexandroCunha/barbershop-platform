@@ -21,6 +21,7 @@ export interface OwnerBooking {
   startTime: string;
   endTime: string;
   serviceName: string;
+  professionalId: number;
   professionalName: string;
   customerName: string;
   customerEmail: string;
@@ -104,6 +105,7 @@ export class BookingService {
         startTime: minutesToTime(booking.startMinute),
         endTime: minutesToTime(booking.endMinute),
         serviceName: serviceNames.get(booking.serviceId) ?? "Service",
+        professionalId: booking.professionalId,
         professionalName: barberNames.get(booking.professionalId) ?? "Barber",
         customerName: booking.customerName,
         customerEmail: booking.customerEmail,

@@ -13,6 +13,7 @@ export interface OwnerBooking {
   startTime: string;
   endTime: string;
   serviceName: string;
+  professionalId: number;
   professionalName: string;
   customerName: string;
   customerEmail: string;

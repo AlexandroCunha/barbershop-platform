@@ -268,6 +268,7 @@ test("the owner's list shows this shop's upcoming bookings with the barber's nam
     startTime: "10:00",
     endTime: "10:30",
     serviceName: "Classic haircut",
+    professionalId: daniel.id,
     professionalName: "Daniel",
     customerName: customer.customerName,
     customerEmail: customer.customerEmail,

@@ -1802,3 +1802,12 @@ textarea {
     grid-column: 1;
   }
 }
+
+.owner-day + .owner-day {
+  margin-top: 1.5rem;
+}
+
+.owner-day h3 {
+  margin: 0;
+  font-size: 1rem;
+}
