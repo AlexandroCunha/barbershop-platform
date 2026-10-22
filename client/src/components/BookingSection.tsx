@@ -1,13 +1,21 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiError } from "../api";
-import { formatDate, formatDuration, formatPrice, todayIn } from "../format";
+import { validateStep, type BookingErrors, type CustomerDetails } from "../booking-validation";
+import { todayIn } from "../format";
 import { useAsync } from "../hooks";
 import { useTenant } from "../tenant-context";
 import type { Availability, Confirmation, Professional, Service } from "../types";
-import { validateStep, type BookingErrors } from "../booking-validation";
+import { BookingConfirmation } from "./booking/BookingConfirmation";
+import { BookingSummary } from "./booking/BookingSummary";
+import { DateTimeStep } from "./booking/DateTimeStep";
+import { DetailsStep } from "./booking/DetailsStep";
+import { ServiceStep } from "./booking/ServiceStep";
+import { offeredTimes } from "./booking/availability-view";
 
 const STEPS = ["Service", "Date and time", "Details and confirm"] as const;
+const LAST_STEP = STEPS.length - 1;
 const NO_TIMES: Availability = { date: "", times: [], barbers: [] };
+const EMPTY_CUSTOMER: CustomerDetails = { name: "", email: "", phone: "" };
 
 interface Props {
   services: Service[] | null;
@@ -19,6 +27,7 @@ interface Props {
   onProfessionalChange: (id: number | undefined) => void;
 }
 
+/** The booking flow: service, then date and time, then the customer's details. */
 export function BookingSection({
   services,
   professionals,
@@ -33,15 +42,13 @@ export function BookingSection({
   const [step, setStep] = useState(0);
   const [date, setDate] = useState("");
   const [time, setTime] = useState<string | undefined>();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [customer, setCustomer] = useState<CustomerDetails>(EMPTY_CUSTOMER);
   const [errors, setErrors] = useState<BookingErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
-  // Every barber's times are loaded at once, so the customer can choose a barber after the time.
+  // Every barber's times load together, so the customer can choose a barber after picking a time.
   const availability = useAsync<Availability>(
     (signal) => (serviceId && date ? api.availability(serviceId, date, undefined, signal) : Promise.resolve(NO_TIMES)),
     [api, serviceId, date],
@@ -50,29 +57,15 @@ export function BookingSection({
   const barber = professionals?.find((item) => item.id === professionalId);
   const today = todayIn(business.timeZone);
 
-  /** The times one barber has free. Empty until the availability has loaded. */
-  function barberTimes(id: number): string[] {
-    return availability.data?.barbers.find((item) => item.professionalId === id)?.times ?? [];
-  }
-
-  /** The barbers who have a time free, in the shop's order. */
-  function availableBarbers(slot: string): Professional[] {
-    const free = availability.data?.barbers.filter((item) => item.times.includes(slot)).map((item) => item.professionalId);
-    return (professionals ?? []).filter((person) => free?.includes(person.id));
-  }
-
-  // The times offered follow the barber once one is chosen, or every barber's times until then.
-  const offeredTimes = professionalId !== undefined ? barberTimes(professionalId) : (availability.data?.times ?? []);
-
-  // A chosen time that the newly chosen barber does not have free is cleared.
+  // A chosen time that the chosen barber does not have free is cleared.
   useEffect(() => {
-    if (time && professionalId !== undefined && !barberTimes(professionalId).includes(time)) {
+    if (time && professionalId !== undefined && !offeredTimes(availability.data, professionalId).includes(time)) {
       setTime(undefined);
     }
   }, [professionalId, availability.data]);
 
   function validate(current: number): BookingErrors {
-    return validateStep(current, { serviceId, professionalId, date, time, name, email, phone }, today);
+    return validateStep(current, { serviceId, professionalId, date, time, ...customer }, today);
   }
 
   function goNext() {
@@ -88,15 +81,24 @@ export function BookingSection({
     setStep((value) => Math.max(0, value - 1));
   }
 
+  function changeDate(value: string) {
+    setDate(value);
+    setTime(undefined);
+  }
+
+  function changeCustomer(field: keyof CustomerDetails, value: string) {
+    setCustomer((current) => ({ ...current, [field]: value }));
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Enter inside an earlier step must not jump ahead, and every field is checked before sending.
-    if (step < STEPS.length - 1) {
+    // Enter on an earlier step must not jump ahead; the last step checks every field before sending.
+    if (step < LAST_STEP) {
       goNext();
       return;
     }
 
-    const found = validate(2);
+    const found = validate(LAST_STEP);
     setErrors(found);
     if (!serviceId || !professionalId || !date || !time || Object.keys(found).length > 0) return;
 
@@ -108,22 +110,18 @@ export function BookingSection({
         professionalId,
         date,
         time,
-        customerName: name.trim(),
-        customerEmail: email.trim(),
-        customerPhone: phone.trim(),
+        customerName: customer.name.trim(),
+        customerEmail: customer.email.trim(),
+        customerPhone: customer.phone.trim(),
       });
       setConfirmation(booked);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        setSubmitError("That time was just taken. Please choose another time.");
+        // The time went to someone else while the customer was deciding, so they pick again.
         setTime(undefined);
         setStep(1);
-      } else if (error instanceof ApiError && (error.status === 400 || error.status === 403)) {
-        // The server names what is wrong, or why booking is paused, which is more useful than a generic message.
-        setSubmitError(error.message);
-      } else {
-        setSubmitError("We could not confirm your booking. Please check your details and try again.");
       }
+      setSubmitError(refusalMessage(error));
     } finally {
       setSubmitting(false);
     }
@@ -135,36 +133,21 @@ export function BookingSection({
     setStep(0);
     setDate("");
     setTime(undefined);
-    setName("");
-    setEmail("");
-    setPhone("");
+    setCustomer(EMPTY_CUSTOMER);
     setErrors({});
     setSubmitError(null);
   }
 
   if (confirmation) {
-    const assigned = professionals?.find((item) => item.id === confirmation.professionalId);
     return (
-      <section id="book" className="block" data-reveal aria-labelledby="book-title">
-        <div className="container">
-          <div className="confirmation" role="status">
-            <p className="eyebrow">Booking confirmed</p>
-            <h2 id="book-title">See you soon, {confirmation.customerName.split(" ")[0]}.</h2>
-            <p className="confirmation-line">
-              {service?.name} with {assigned?.name ?? "one of our barbers"} on {formatDate(confirmation.date)} at{" "}
-              {confirmation.startTime}.
-            </p>
-            <p className="muted">Reference {confirmation.id.slice(0, 8).toUpperCase()}</p>
-            <button type="button" className="btn btn-ghost" onClick={startAgain}>
-              Make another booking
-            </button>
-          </div>
-        </div>
-      </section>
+      <BookingConfirmation
+        confirmation={confirmation}
+        service={service}
+        professionals={professionals}
+        onStartAgain={startAgain}
+      />
     );
   }
-
-  const priceLabel = service ? formatPrice(service.priceCents, business.currency) : "—";
 
   return (
     <section id="book" className="block" data-reveal aria-labelledby="book-title">
@@ -197,172 +180,31 @@ export function BookingSection({
 
             <form className="booking-form" onSubmit={handleSubmit} noValidate aria-busy={submitting}>
               {step === 0 && (
-                <fieldset>
-                  <legend>Choose a service</legend>
-                  {!services && !loadError && <p className="status">Loading services…</p>}
-                  <div className="option-list">
-                    {services?.map((item) => (
-                      <label key={item.id} className={`option${serviceId === item.id ? " is-selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="service"
-                          value={item.id}
-                          checked={serviceId === item.id}
-                          onChange={() => onServiceChange(item.id)}
-                        />
-                        <span className="option-main">
-                          <span className="option-title">{item.name}</span>
-                          {item.description && <span className="muted">{item.description}</span>}
-                        </span>
-                        <span className="option-side">
-                          <span className="option-price">{formatPrice(item.priceCents, business.currency)}</span>
-                          <span className="muted">{formatDuration(item.durationMinutes)}</span>
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  <FieldError id="err-service" message={errors.service} />
-                </fieldset>
+                <ServiceStep
+                  services={services}
+                  loadError={loadError}
+                  serviceId={serviceId}
+                  error={errors.service}
+                  onServiceChange={onServiceChange}
+                />
               )}
 
               {step === 1 && (
-                <div className="date-time">
-                  <p className="muted">{barber ? `With ${barber.name}` : "Pick a time, then choose your barber."}</p>
-
-                  <div className="field">
-                    <label htmlFor="booking-date">Date</label>
-                    <input
-                      id="booking-date"
-                      type="date"
-                      min={today}
-                      value={date}
-                      aria-invalid={Boolean(errors.date)}
-                      aria-describedby={errors.date ? "err-date" : undefined}
-                      onChange={(event) => {
-                        setDate(event.target.value);
-                        setTime(undefined);
-                      }}
-                    />
-                    <FieldError id="err-date" message={errors.date} />
-                  </div>
-
-                  <div className="field">
-                    <span className="field-label" id="times-label">
-                      Available times
-                    </span>
-                    {!date && <p className="muted">Choose a date to see available times.</p>}
-                    {date && availability.loading && (
-                      <p className="status" role="status">
-                        Checking availability…
-                      </p>
-                    )}
-                    {date && availability.error && (
-                      <p className="status status-error" role="alert">
-                        {availability.error}
-                      </p>
-                    )}
-                    {date && availability.data && offeredTimes.length === 0 && !availability.loading && (
-                      <p className="muted">No times left on this day. Try another date.</p>
-                    )}
-                    {offeredTimes.length > 0 && (
-                      <div className="times" role="group" aria-labelledby="times-label">
-                        {offeredTimes.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            className="time"
-                            aria-pressed={time === slot}
-                            onClick={() => setTime(slot)}
-                          >
-                            {slot}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <FieldError id="err-time" message={errors.time} />
-                  </div>
-
-                  {!barber && time && (
-                    <fieldset>
-                      <legend>Choose your barber for {time}</legend>
-                      <div className="option-list">
-                        {availableBarbers(time).map((person) => (
-                          <label
-                            key={person.id}
-                            className={`option${professionalId === person.id ? " is-selected" : ""}`}
-                          >
-                            <input
-                              type="radio"
-                              name="barber-at-time"
-                              value={person.id}
-                              checked={professionalId === person.id}
-                              onChange={() => onProfessionalChange(person.id)}
-                            />
-                            <span className="option-main">
-                              <span className="option-title">{person.name}</span>
-                              {person.specialties.length > 0 && (
-                                <span className="muted">{person.specialties.join(" · ")}</span>
-                              )}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                      <FieldError id="err-barber" message={errors.barber} />
-                    </fieldset>
-                  )}
-                </div>
+                <DateTimeStep
+                  date={date}
+                  time={time}
+                  today={today}
+                  professionals={professionals ?? []}
+                  professionalId={professionalId}
+                  availability={availability}
+                  errors={errors}
+                  onDateChange={changeDate}
+                  onTimeChange={setTime}
+                  onProfessionalChange={onProfessionalChange}
+                />
               )}
 
-              {step === 2 && (
-                <div className="details">
-                  <div className="field">
-                    <label htmlFor="customer-name">Full name</label>
-                    <input
-                      id="customer-name"
-                      name="customerName"
-                      autoComplete="name"
-                      maxLength={100}
-                      value={name}
-                      aria-invalid={Boolean(errors.name)}
-                      aria-describedby={errors.name ? "err-name" : undefined}
-                      onChange={(event) => setName(event.target.value)}
-                    />
-                    <FieldError id="err-name" message={errors.name} />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="customer-email">Email</label>
-                    <input
-                      id="customer-email"
-                      name="customerEmail"
-                      type="email"
-                      autoComplete="email"
-                      maxLength={100}
-                      value={email}
-                      aria-invalid={Boolean(errors.email)}
-                      aria-describedby={errors.email ? "err-email" : undefined}
-                      onChange={(event) => setEmail(event.target.value)}
-                    />
-                    <FieldError id="err-email" message={errors.email} />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="customer-phone">Mobile phone</label>
-                    <input
-                      id="customer-phone"
-                      name="customerPhone"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      maxLength={25}
-                      value={phone}
-                      aria-invalid={Boolean(errors.phone)}
-                      aria-describedby={errors.phone ? "err-phone" : undefined}
-                      onChange={(event) => setPhone(event.target.value)}
-                    />
-                    <FieldError id="err-phone" message={errors.phone} />
-                    <p className="muted note">We use your email and phone only about this appointment.</p>
-                  </div>
-                </div>
-              )}
+              {step === 2 && <DetailsStep customer={customer} errors={errors} onChange={changeCustomer} />}
 
               {submitError && (
                 <p className="status status-error" role="alert">
@@ -374,7 +216,7 @@ export function BookingSection({
                 <button type="button" className="btn btn-ghost" onClick={goBack} disabled={step === 0 || submitting}>
                   Back
                 </button>
-                {step < STEPS.length - 1 ? (
+                {step < LAST_STEP ? (
                   <button type="button" className="btn btn-dark" onClick={goNext}>
                     Continue
                   </button>
@@ -387,46 +229,21 @@ export function BookingSection({
             </form>
           </div>
 
-          <aside className="summary" aria-label="Your booking" aria-live="polite">
-            <h3>Your booking</h3>
-            <dl>
-              <div>
-                <dt>Service</dt>
-                <dd>{service?.name ?? "Not chosen"}</dd>
-              </div>
-              <div>
-                <dt>Barber</dt>
-                <dd>{barber?.name ?? "Not chosen"}</dd>
-              </div>
-              <div>
-                <dt>Date</dt>
-                <dd>{date ? formatDate(date) : "Not chosen"}</dd>
-              </div>
-              <div>
-                <dt>Time</dt>
-                <dd>{time ?? "Not chosen"}</dd>
-              </div>
-              <div>
-                <dt>Duration</dt>
-                <dd>{service ? formatDuration(service.durationMinutes) : "—"}</dd>
-              </div>
-            </dl>
-            <p className="summary-total">
-              <span>Total</span>
-              <strong>{priceLabel}</strong>
-            </p>
-          </aside>
+          <BookingSummary service={service} barber={barber} date={date} time={time} />
         </div>
       </div>
     </section>
   );
 }
 
-function FieldError({ id, message }: { id: string; message?: string }) {
-  if (!message) return null;
-  return (
-    <p id={id} className="field-error" role="alert">
-      {message}
-    </p>
-  );
+/** What the customer is told when the server refuses the booking. */
+function refusalMessage(error: unknown): string {
+  if (error instanceof ApiError && error.status === 409) {
+    return "That time was just taken. Please choose another time.";
+  }
+  // The server names what is wrong, or why booking is paused, which is more useful than a generic message.
+  if (error instanceof ApiError && (error.status === 400 || error.status === 403)) {
+    return error.message;
+  }
+  return "We could not confirm your booking. Please check your details and try again.";
 }

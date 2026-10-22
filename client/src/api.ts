@@ -121,17 +121,17 @@ export function tenantApi(slug: string) {
         ),
 
       createService: (input: { name: string; description: string; priceCents: number; durationMinutes: number }) =>
-    ownerSend<Service>(`${owner}/services`, json("POST", input), "services"),
+        ownerSend<Service>(`${owner}/services`, json("POST", input), "services"),
 
-  createProfessional: (input: { name: string; specialties: string[]; bio: string }) =>
-    ownerSend<Professional>(`${owner}/professionals`, json("POST", input), "professionals"),
+      createProfessional: (input: { name: string; specialties: string[]; bio: string }) =>
+        ownerSend<Professional>(`${owner}/professionals`, json("POST", input), "professionals"),
 
-  archiveService: (id: number) => ownerSend<unknown>(`${owner}/services/${id}`, { method: "DELETE" }, "services"),
+      archiveService: (id: number) => ownerSend<unknown>(`${owner}/services/${id}`, { method: "DELETE" }, "services"),
 
-  archiveProfessional: (id: number) =>
-    ownerSend<unknown>(`${owner}/professionals/${id}`, { method: "DELETE" }, "professionals"),
+      archiveProfessional: (id: number) =>
+        ownerSend<unknown>(`${owner}/professionals/${id}`, { method: "DELETE" }, "professionals"),
 
-  updateService: (id: number, patch: Partial<Omit<Service, "id">>) =>
+      updateService: (id: number, patch: Partial<Omit<Service, "id">>) =>
         ownerSend<Service>(`${owner}/services/${id}`, json("PATCH", patch), "services"),
 
       updateProfessional: (id: number, patch: Partial<Omit<Professional, "id">>) =>

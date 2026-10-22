@@ -3,6 +3,7 @@ import type { Tenant } from "../domain/tenant.js";
 import { barberWeekToApi, parseBarberWeek } from "../domain/barber-hours.js";
 import type { DayHours, Day } from "../domain/business.js";
 import { isUpcoming } from "../domain/upcoming-bookings.js";
+import type { Professional } from "../domain/types.js";
 import type {
   BarberAccount,
   BarberAccountRepository,
@@ -63,10 +64,12 @@ export class BarberService {
     return { custom: true, days: barberWeekToApi(week, tenant.business.hours) };
   }
 
-  private async requireProfessional(tenant: Tenant, professionalId: number): Promise<void> {
-    if (!(await this.professionals.findById(tenant.id, professionalId))) {
+  private async requireProfessional(tenant: Tenant, professionalId: number): Promise<Professional> {
+    const professional = await this.professionals.findById(tenant.id, professionalId);
+    if (!professional) {
       throw new AppError(404, "Professional not found");
     }
+    return professional;
   }
 
   async signIn(tenant: Tenant, email: string, password: string): Promise<BarberAccount> {
@@ -125,11 +128,7 @@ export class BarberService {
    * so a replaced password takes effect immediately.
    */
   async setLogin(tenant: Tenant, professionalId: number, email: string, password: string): Promise<{ email: string }> {
-    const professional = await this.professionals.findById(tenant.id, professionalId);
-    if (!professional) {
-      throw new AppError(404, "Professional not found");
-    }
-
+    const professional = await this.requireProfessional(tenant, professionalId);
     const account = await this.accounts.upsert(tenant.id, professional.id, email, await hashPassword(password));
     await this.sessions.revokeAllForBarberAccount(account.id);
     return { email: account.email };
@@ -137,11 +136,7 @@ export class BarberService {
 
   /** The owner removes a barber's login. The barber's sessions end with it. */
   async removeLogin(tenant: Tenant, professionalId: number): Promise<void> {
-    const professional = await this.professionals.findById(tenant.id, professionalId);
-    if (!professional) {
-      throw new AppError(404, "Professional not found");
-    }
-
+    const professional = await this.requireProfessional(tenant, professionalId);
     const existing = await this.accounts.findByProfessional(tenant.id, professional.id);
     if (!existing) {
       throw new AppError(404, "This barber has no login");

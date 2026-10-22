@@ -3,15 +3,19 @@ export type BookingField = "service" | "barber" | "date" | "time" | "name" | "em
 
 export type BookingErrors = Partial<Record<BookingField, string>>;
 
+/** The customer's own details, as typed on the last step. */
+export interface CustomerDetails {
+  name: string;
+  email: string;
+  phone: string;
+}
+
 /** Everything the customer has entered so far, before it is sent to the server. */
-export interface BookingDraft {
+export interface BookingDraft extends CustomerDetails {
   serviceId?: number;
   professionalId?: number;
   date: string;
   time?: string;
-  name: string;
-  email: string;
-  phone: string;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

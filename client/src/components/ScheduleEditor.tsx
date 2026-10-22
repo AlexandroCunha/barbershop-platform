@@ -1,17 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Notice, errorText } from "../admin/ui";
+import { DAY_LABELS } from "../format";
 import { useTenant } from "../tenant-context";
 import { DAYS, type BarberHours, type Day, type DayHours } from "../types";
-
-const DAY_LABELS: Record<Day, string> = {
-  sunday: "Sunday",
-  monday: "Monday",
-  tuesday: "Tuesday",
-  wednesday: "Wednesday",
-  thursday: "Thursday",
-  friday: "Friday",
-  saturday: "Saturday",
-};
 
 /** Bookings start on the half hour, so the hours a barber can pick are on that grid. */
 const GRID_MINUTES = 30;
