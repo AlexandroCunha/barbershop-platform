@@ -11,6 +11,8 @@ export interface Config {
   sessionSecret: string;
   /** Send session cookies only over HTTPS. On by default in production. */
   secureCookies: boolean;
+  /** NODE_ENV is production. Some warnings only matter on the live site. */
+  production: boolean;
   /**
    * Number of reverse proxies in front of the app, each of which appends to X-Forwarded-For.
    * 0 means the app is reached directly, and client addresses come from the socket alone.
@@ -119,6 +121,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl,
     sessionSecret,
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
+    production,
     trustProxyHops: parseTrustProxyHops(env.TRUST_PROXY),
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
     homeShopSlug: parseHomeShop(env.HOME_SHOP_SLUG),

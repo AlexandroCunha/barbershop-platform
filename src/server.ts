@@ -47,6 +47,10 @@ const barbers = new BarberService(barberAccounts, professionals, services, booki
 
 const accounts = new AccountService(tenants, owners, clock);
 const media = config.media.kind === "s3" ? createS3MediaStorage(config.media.settings) : new LocalMediaStorage(MEDIA_DIR);
+if (config.production && config.media.kind === "local") {
+  // Free hosts reset the disk on every deploy, so photos stored here disappear. See docs/DEPLOY.md.
+  console.warn("Photos are kept on this server's disk. Set MEDIA_STORAGE=s3 and the S3_* variables to keep them.");
+}
 // Counters live in PostgreSQL, so every instance enforces the same limits.
 const limits = new PgRateLimitStore(pool);
 

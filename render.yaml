@@ -24,3 +24,15 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      # Photos. Leave MEDIA_STORAGE empty to keep them on the server's disk, which is lost on every deploy.
+      # Set it to s3 and fill the S3_* values with a Cloudflare R2 bucket (see docs/DEPLOY.md).
+      - key: MEDIA_STORAGE
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
