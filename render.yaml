@@ -6,7 +6,8 @@ services:
     runtime: node
     region: frankfurt
     plan: free
-    buildCommand: npm ci && npm run build
+    # NODE_ENV=production makes npm skip devDependencies, but the build needs them (TypeScript, Vite, type packages).
+    buildCommand: npm ci --include=dev && npm run build
     # Migrations are idempotent, so running them on each start is safe while there is one instance.
     startCommand: npm run db:migrate && npm start
     healthCheckPath: /api/health

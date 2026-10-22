@@ -53,11 +53,13 @@ Caddy appends to `X-Forwarded-For` by default, so `reverse_proxy 127.0.0.1:3100`
 ## First deployment
 
 ```bash
-npm ci
+npm ci --include=dev
 npm run build
 npm run db:migrate
 npm start
 ```
+
+The build needs the development dependencies (TypeScript, Vite and the type packages). When `NODE_ENV=production` is set during the install, plain `npm ci` skips them and the build fails, so use `--include=dev`.
 
 Run the app under a process manager (systemd, or pm2) so it restarts after a crash or reboot. Migrations are applied once each and recorded in `schema_migrations`, so running `npm run db:migrate` again is safe.
 
@@ -93,7 +95,7 @@ This is the setup used for online tests. The app runs on Render, and the databas
 ## Upgrades
 
 1. Back up the database and the photos (see [Backups](#backups)).
-2. Pull the new version, then run `npm ci`, `npm run build` and `npm run db:migrate`.
+2. Pull the new version, then run `npm ci --include=dev`, `npm run build` and `npm run db:migrate`.
 3. Restart the process. With several servers, restart them one at a time so the site stays up.
 
 Sessions issued before an upgrade remain valid until they expire or are revoked.
