@@ -3,7 +3,16 @@ import { test } from "node:test";
 import { DEFAULT_BUSINESS } from "../domain/defaults.js";
 import type { Booking, NewBooking, Professional, Service } from "../domain/types.js";
 import type { Tenant } from "../domain/tenant.js";
-import type { BookingRepository, ProfessionalRepository, ServiceRepository } from "../repositories/types.js";
+import type {
+  BookingRecord,
+  BookingRepository,
+  BookingSlot,
+  NotificationDraft,
+  ProfessionalRepository,
+  ServiceRepository,
+} from "../repositories/types.js";
+import { BookingManagementService } from "../services/booking-management-service.js";
+import { BookingMessages } from "../services/booking-messages.js";
 import { BookingService } from "../services/booking-service.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
@@ -85,45 +94,77 @@ class InMemoryProfessionals implements ProfessionalRepository {
   }
 }
 
+/** Records the messages each change asked to queue, so tests can check them. */
 class InMemoryBookings implements BookingRepository {
-  readonly items: (Booking & { tenantId: number })[] = [];
+  readonly items: (Booking & { tenantId: number; cancelledAt: Date | null })[] = [];
+  readonly queued: NotificationDraft[] = [];
+
+  private active(tenantId: number) {
+    return this.items.filter((booking) => booking.tenantId === tenantId && booking.cancelledAt === null);
+  }
 
   async findByDate(tenantId: number, isoDate: string): Promise<Booking[]> {
-    return this.items.filter((booking) => booking.tenantId === tenantId && booking.date === isoDate);
+    return this.active(tenantId).filter((booking) => booking.date === isoDate);
   }
 
   async findFromDate(tenantId: number, professionalId: number, fromIsoDate: string): Promise<Booking[]> {
-    return this.items.filter(
-      (booking) =>
-        booking.tenantId === tenantId && booking.professionalId === professionalId && booking.date >= fromIsoDate,
-    );
+    return this.active(tenantId).filter((booking) => booking.professionalId === professionalId && booking.date >= fromIsoDate);
   }
 
   async findUpcoming(tenantId: number, fromIsoDate: string, limit: number): Promise<Booking[]> {
-    return this.items
-      .filter((item) => item.tenantId === tenantId && item.date >= fromIsoDate)
+    return this.active(tenantId)
+      .filter((item) => item.date >= fromIsoDate)
       .sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute)
       .slice(0, limit);
   }
 
-  async create(tenantId: number, booking: NewBooking): Promise<Booking> {
-    const clash = this.items.some(
+  async findById(tenantId: number, id: string): Promise<BookingRecord | null> {
+    return this.items.find((booking) => booking.tenantId === tenantId && booking.id === id) ?? null;
+  }
+
+  async create(tenantId: number, booking: NewBooking, messagesFor: (id: string) => NotificationDraft[]): Promise<Booking> {
+    this.assertFree(tenantId, booking.professionalId, booking.date, booking.startMinute, booking.endMinute, undefined);
+    const saved = { ...booking, id: `booking-${this.items.length + 1}`, createdAt: new Date(), tenantId, cancelledAt: null };
+    this.items.push(saved);
+    this.queued.push(...messagesFor(saved.id));
+    return saved;
+  }
+
+  async cancel(tenantId: number, id: string, at: Date, messages: NotificationDraft[]): Promise<boolean> {
+    const booking = this.active(tenantId).find((item) => item.id === id);
+    if (!booking) return false;
+    booking.cancelledAt = at;
+    this.queued.push(...messages);
+    return true;
+  }
+
+  async move(tenantId: number, id: string, slot: BookingSlot, messages: NotificationDraft[]): Promise<boolean> {
+    const booking = this.active(tenantId).find((item) => item.id === id);
+    if (!booking) return false;
+    this.assertFree(tenantId, booking.professionalId, slot.date, slot.startMinute, slot.endMinute, id);
+    Object.assign(booking, { date: slot.date, startMinute: slot.startMinute, endMinute: slot.endMinute });
+    this.queued.push(...messages);
+    return true;
+  }
+
+  /** The same rule as the database: two active bookings of one barber may not overlap. */
+  private assertFree(tenantId: number, professionalId: number, date: string, start: number, end: number, exceptId?: string) {
+    const clash = this.active(tenantId).some(
       (existing) =>
-        existing.tenantId === tenantId &&
-        existing.professionalId === booking.professionalId &&
-        existing.date === booking.date &&
-        existing.startMinute === booking.startMinute,
+        existing.id !== exceptId &&
+        existing.professionalId === professionalId &&
+        existing.date === date &&
+        existing.startMinute < end &&
+        start < existing.endMinute,
     );
     if (clash) {
       throw new AppError(409, "That time is no longer available");
     }
-    const saved = { ...booking, id: `booking-${this.items.length + 1}`, createdAt: new Date(), tenantId };
-    this.items.push(saved);
-    return saved;
   }
 }
 
 const clock: Clock = { now: () => NOW, today: () => TODAY };
+const TEST_SECRET = "test-secret-test-secret-test-secret-32";
 
 /** The start times offered on a date, across the barbers who can take the booking. */
 async function offered(service: BookingService, date: string, professionalId?: number): Promise<string[]> {
@@ -133,21 +174,26 @@ async function offered(service: BookingService, date: string, professionalId?: n
 
 function setup() {
   const bookings = new InMemoryBookings();
+  const messages = new BookingMessages({ secret: TEST_SECRET, publicUrl: "https://shop.test", enabled: true }, clock);
+  const services = new InMemoryServices([
+    { tenantId: shop.id, service: classicHaircut },
+    { tenantId: otherShop.id, service: { ...classicHaircut, id: 1, name: "Other shop cut" } },
+  ]);
+  const professionals = new InMemoryProfessionals([
+    { tenantId: shop.id, professional: daniel },
+    { tenantId: shop.id, professional: luca },
+    { tenantId: otherShop.id, professional: daniel },
+  ]);
   const service = new BookingService(
-    new InMemoryServices([
-      { tenantId: shop.id, service: classicHaircut },
-      { tenantId: otherShop.id, service: { ...classicHaircut, id: 1, name: "Other shop cut" } },
-    ]),
-    new InMemoryProfessionals([
-      { tenantId: shop.id, professional: daniel },
-      { tenantId: shop.id, professional: luca },
-      { tenantId: otherShop.id, professional: daniel },
-    ]),
+    services,
+    professionals,
     bookings,
     clock,
     { findByProfessional: async () => null, replace: async () => undefined },
+    messages,
   );
-  return { service, bookings };
+  const management = new BookingManagementService(bookings, services, professionals, service, messages, clock);
+  return { service, bookings, messages, management, services, professionals };
 }
 
 const customer = { customerName: "Ada", customerEmail: "ada@example.com", customerPhone: "+353 85 123 4567" };
@@ -287,6 +333,7 @@ test("the owner's list shows this shop's upcoming bookings with the barber's nam
     date: MONDAY,
     startTime: "10:00",
     endTime: "10:30",
+    serviceId: classicHaircut.id,
     serviceName: "Classic haircut",
     professionalId: daniel.id,
     professionalName: "Daniel",
@@ -294,4 +341,102 @@ test("the owner's list shows this shop's upcoming bookings with the barber's nam
     customerEmail: customer.customerEmail,
     customerPhone: customer.customerPhone,
   });
+});
+
+test("a booking queues its confirmation and reminder in the same step as the booking", async () => {
+  const { service, bookings } = setup();
+  await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  assert.deepEqual(bookings.queued.map((draft) => draft.kind), ["confirmation", "reminder"]);
+});
+
+test("cancelling frees the time for the next customer and queues a cancellation", async () => {
+  const { service, bookings, management } = setup();
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  await management.cancel(shop, booked.id, { kind: "customer" });
+
+  assert.ok(bookings.queued.some((draft) => draft.kind === "cancellation"));
+  const again = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+  assert.equal(again.professionalId, daniel.id, "the same chair takes a new booking at the same time");
+});
+
+test("a cancelled booking cannot be cancelled or moved again", async () => {
+  const { service, management } = setup();
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+  await management.cancel(shop, booked.id, { kind: "owner" });
+
+  await assert.rejects(management.cancel(shop, booked.id, { kind: "owner" }), assertAppError(409));
+  await assert.rejects(management.move(shop, booked.id, { kind: "owner" }, { date: MONDAY, startMinute: 10 * 60 }), assertAppError(409));
+});
+
+test("a move frees the old time, takes the new one, and queues a move notice", async () => {
+  const { service, bookings, management } = setup();
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  await management.move(shop, booked.id, { kind: "customer" }, { date: MONDAY, startMinute: 11 * 60 });
+
+  assert.ok(bookings.queued.some((draft) => draft.kind === "moved"));
+  assert.ok((await offered(service, MONDAY, daniel.id)).includes("09:00"), "the old time is free");
+  assert.ok(!(await offered(service, MONDAY, daniel.id)).includes("11:00"), "the new time is taken");
+});
+
+test("a move is refused when the new time is taken by another booking", async () => {
+  const { service, management } = setup();
+  const mine = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+  await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 11 * 60, ...customer });
+
+  await assert.rejects(management.move(shop, mine.id, { kind: "customer" }, { date: MONDAY, startMinute: 11 * 60 }), assertAppError(409));
+});
+
+test("a barber can change only the bookings in their own chair", async () => {
+  const { service, management } = setup();
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: luca.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  await assert.rejects(management.cancel(shop, booked.id, { kind: "barber", professionalId: daniel.id }), assertAppError(404));
+  await management.cancel(shop, booked.id, { kind: "barber", professionalId: luca.id });
+});
+
+test("a booking that has started cannot be changed by the customer", async () => {
+  const { service, bookings, services, professionals } = setup();
+  const started = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  // Half an hour after the start: the same data, read by a management service whose clock is later.
+  const halfHourAfter: Clock = { now: () => new Date("2030-01-07T09:30:00Z"), today: () => "2030-01-07" };
+  const management = new BookingManagementService(
+    bookings,
+    services,
+    professionals,
+    service,
+    new BookingMessages({ secret: TEST_SECRET, publicUrl: "https://shop.test", enabled: true }, halfHourAfter),
+    halfHourAfter,
+  );
+
+  await assert.rejects(management.cancel(shop, started.id, { kind: "customer" }), assertAppError(409));
+  assert.equal((await management.viewForCustomer(shop, started.id)).status, "started");
+});
+
+test("a customer's view says whether the booking is upcoming, cancelled or started", async () => {
+  const { service, management } = setup();
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+  assert.equal((await management.viewForCustomer(shop, booked.id)).status, "upcoming");
+  await management.cancel(shop, booked.id, { kind: "customer" });
+  assert.equal((await management.viewForCustomer(shop, booked.id)).status, "cancelled");
+});
+
+test("a booking in another shop is not found", async () => {
+  const { service, management } = setup();
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+  await assert.rejects(management.viewForCustomer(otherShop, booked.id), assertAppError(404));
+});
+
+test("a time that has already passed today cannot be booked", async () => {
+  const { service } = setup();
+  // The clock says 10:00 on TODAY, so a 09:00 start today is in the past.
+  await assert.rejects(
+    service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: TODAY, startMinute: 9 * 60, ...customer }),
+    assertAppError(409),
+  );
+  assert.ok(!(await offered(service, TODAY)).includes("09:00"));
+  assert.ok((await offered(service, TODAY)).includes("10:00"));
 });

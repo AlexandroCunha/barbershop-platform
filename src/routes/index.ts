@@ -2,6 +2,8 @@ import express, { Router, type RequestHandler } from "express";
 import type { AdminController } from "../controllers/admin-controller.js";
 import type { BarberController } from "../controllers/barber-controller.js";
 import type { BookingController } from "../controllers/booking-controller.js";
+import type { ManageController } from "../controllers/manage-controller.js";
+import type { PasswordResetController } from "../controllers/password-reset-controller.js";
 import type { OwnerController } from "../controllers/owner-controller.js";
 import type { SiteController } from "../controllers/site-controller.js";
 import { MEDIA_CONTENT_TYPES } from "../media/media-storage.js";
@@ -22,6 +24,12 @@ export interface ApiDependencies {
   loginLimit: RequestHandler;
   /** Throttles booking requests from one address. */
   bookingLimit: RequestHandler;
+  /** Throttles password reset requests and confirmations from one address. */
+  resetLimit: RequestHandler;
+  /** Throttles the customer's link actions from one address, so a token cannot be guessed by trying many. */
+  manageLimit: RequestHandler;
+  manage: ManageController;
+  passwordReset: PasswordResetController;
 }
 
 /**
@@ -40,6 +48,17 @@ export function createApiRouter(deps: ApiDependencies): Router {
   shop.get("/availability", deps.booking.availability);
   shop.post("/bookings", deps.bookingLimit, deps.booking.book);
 
+  // A customer's own booking, through the link in their e-mail. The token is sent in the body.
+  shop.post("/manage/view", deps.manageLimit, deps.manage.view);
+  shop.post("/manage/cancel", deps.manageLimit, deps.manage.cancel);
+  shop.post("/manage/move", deps.manageLimit, deps.manage.move);
+  shop.post("/manage/availability", deps.manageLimit, deps.manage.availability);
+
+  // Forgotten passwords. The owner and the barber each request a link; the link sets the new password.
+  shop.post("/password-reset/owner", deps.resetLimit, deps.passwordReset.requestOwner);
+  shop.post("/password-reset/barber", deps.resetLimit, deps.passwordReset.requestBarber);
+  shop.post("/password-reset/confirm", deps.resetLimit, deps.passwordReset.confirm);
+
   // Owner sign-in and sign-out.
   shop.post("/owner/login", deps.loginLimit, deps.owner.login);
   shop.post("/owner/logout", deps.owner.logout);
@@ -52,6 +71,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
   owner.put("/business", deps.admin.saveBusiness);
   owner.put("/address", deps.admin.changeAddress);
   owner.get("/bookings", deps.booking.ownerBookings);
+  owner.post("/bookings/:id/cancel", deps.booking.ownerCancel);
+  owner.post("/bookings/:id/move", deps.booking.ownerMove);
   owner.get("/media", deps.admin.listMedia);
   owner.post("/media", express.raw({ type: MEDIA_CONTENT_TYPES, limit: "8mb" }), deps.admin.uploadMedia);
   owner.delete("/media/:name", deps.admin.removeMedia);
@@ -75,6 +96,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
   barber.use(deps.requireBarber);
   barber.get("/session", deps.barber.session);
   barber.get("/bookings", deps.barber.bookings);
+  barber.post("/bookings/:id/cancel", deps.barber.cancelBooking);
+  barber.post("/bookings/:id/move", deps.barber.moveBooking);
   barber.get("/hours", deps.barber.hours);
   barber.put("/hours", deps.barber.saveHours);
   shop.use("/barber", barber);

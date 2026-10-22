@@ -1,0 +1,78 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { readManageToken } from "../auth/manage-token.js";
+import { DEFAULT_BUSINESS } from "../domain/defaults.js";
+import type { Tenant } from "../domain/tenant.js";
+import { BookingMessages, type BookingFacts } from "../services/booking-messages.js";
+import type { Clock } from "../utils/clock.js";
+
+const SECRET = "test-secret-test-secret-test-secret-32";
+const NOW = new Date("2030-01-01T10:00:00Z");
+const BOOKING = "423fc28f-e102-4dd5-bc0d-4ede4cfaa91a";
+const clock: Clock = { now: () => NOW, today: () => "2030-01-01" };
+
+const tenant: Tenant = {
+  id: 3,
+  slug: "northgate",
+  name: "Northgate",
+  business: { ...DEFAULT_BUSINESS, name: "Northgate Barbers" },
+  licenseStatus: "active",
+  trialEndsAt: null,
+  paidUntil: null,
+};
+
+/** A booking on 7 January 2030 at 10:00 (GMT in Dublin), which is more than a day after NOW. */
+const facts: BookingFacts = {
+  tenant,
+  serviceName: "Haircut",
+  barberName: "Daniel",
+  date: "2030-01-07",
+  startMinute: 10 * 60,
+  endMinute: 10 * 60 + 30,
+  customerName: "Ada Lovelace",
+  customerEmail: "ada@example.com",
+};
+
+const messages = (enabled = true) => new BookingMessages({ secret: SECRET, publicUrl: "https://shop.test", enabled }, clock);
+
+test("a new booking queues a confirmation now and a reminder the day before", () => {
+  const drafts = messages().created(facts, BOOKING);
+
+  assert.deepEqual(
+    drafts.map((draft) => draft.kind),
+    ["confirmation", "reminder"],
+  );
+  assert.equal(drafts[0]!.sendAt.getTime(), NOW.getTime());
+  assert.equal(drafts[1]!.sendAt.toISOString(), "2030-01-06T10:00:00.000Z");
+  assert.equal(drafts[0]!.toAddress, "ada@example.com");
+});
+
+test("the link in a confirmation opens exactly this booking, in this shop", () => {
+  const [confirmation] = messages().created(facts, BOOKING);
+  const link = confirmation!.body.match(/https:\/\/shop\.test\/northgate\/reserva\?token=(\S+)/);
+  assert.ok(link, "the body names the manage link");
+
+  const claims = readManageToken(SECRET, link[1], NOW);
+  assert.deepEqual(claims, { tenantId: 3, bookingId: BOOKING });
+  assert.match(confirmation!.body, /Monday 7 January at 10:00 to 10:30/);
+});
+
+test("no reminder is queued when the booking is less than a day away", () => {
+  const soon = { ...facts, date: "2030-01-01", startMinute: 11 * 60, endMinute: 11 * 60 + 30 };
+  assert.deepEqual(
+    messages().created(soon, BOOKING).map((draft) => draft.kind),
+    ["confirmation"],
+  );
+});
+
+test("a cancellation and a move each queue one message, and a move brings the reminder along", () => {
+  assert.deepEqual(messages().cancelled(facts, BOOKING).map((draft) => draft.kind), ["cancellation"]);
+  assert.deepEqual(messages().moved(facts, BOOKING).map((draft) => draft.kind), ["moved", "reminder"]);
+});
+
+test("nothing is queued when mail is off", () => {
+  const off = messages(false);
+  assert.deepEqual(off.created(facts, BOOKING), []);
+  assert.deepEqual(off.cancelled(facts, BOOKING), []);
+  assert.deepEqual(off.moved(facts, BOOKING), []);
+});

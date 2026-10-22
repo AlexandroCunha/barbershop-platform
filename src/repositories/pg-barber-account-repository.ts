@@ -68,6 +68,10 @@ export class PgBarberAccountRepository implements BarberAccountRepository {
     }
   }
 
+  async updatePasswordHash(id: number, passwordHash: string): Promise<void> {
+    await this.db.query(`UPDATE barber_accounts SET password_hash = $2 WHERE id = $1`, [id, passwordHash]);
+  }
+
   async remove(tenantId: number, professionalId: number): Promise<boolean> {
     const { rowCount } = await this.db.query(
       `DELETE FROM barber_accounts WHERE tenant_id = $1 AND professional_id = $2`,

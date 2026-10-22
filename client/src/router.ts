@@ -4,6 +4,9 @@
  *   /:slug            a barbershop's website
  *   /:slug/admin      that barbershop's owner area
  *   /:slug/barber     that barbershop's barber area (own bookings only)
+ *   /:slug/acesso     the sign-in choice for owner and barber
+ *   /:slug/reserva    a customer's own booking, from the link in their e-mail
+ *   /:slug/redefinir  a new password, from the link in a reset e-mail
  *
  * The server uses the same rules for the shop address; keep the two in step.
  */
@@ -12,7 +15,7 @@ const RESERVED = new Set(["api", "admin", "acesso", "platform", "media", "assets
 
 export type Route =
   | { kind: "landing" }
-  | { kind: "shop"; slug: string; view: "site" | "admin" | "barber" | "access" }
+  | { kind: "shop"; slug: string; view: "site" | "admin" | "barber" | "access" | "manage" | "reset" }
   | { kind: "not-found" };
 
 function isShopSlug(slug: string): boolean {
@@ -31,5 +34,7 @@ export function parseRoute(pathname: string): Route {
   if (section === "admin") return { kind: "shop", slug, view: "admin" };
   if (section === "barber") return { kind: "shop", slug, view: "barber" };
   if (section === "acesso") return { kind: "shop", slug, view: "access" };
+  if (section === "reserva") return { kind: "shop", slug, view: "manage" };
+  if (section === "redefinir") return { kind: "shop", slug, view: "reset" };
   return { kind: "not-found" };
 }

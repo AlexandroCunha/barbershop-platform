@@ -3,6 +3,7 @@ import { ApiError, OWNER_SESSION_EXPIRED, type TenantApi } from "../api";
 import { useTenant } from "../tenant-context";
 import type { LicenseSummary } from "../types";
 import { AccountPanel } from "./AccountPanel";
+import { ForgotPassword } from "../components/ForgotPassword";
 import { BookingsPanel } from "./BookingsPanel";
 import { BusinessPanel } from "./BusinessPanel";
 import { MediaPanel } from "./MediaPanel";
@@ -206,6 +207,7 @@ function LoginPanel({
           {busy ? "Checking…" : "Sign in"}
         </button>
       </form>
+      <ForgotPassword area="owner" />
     </div>
   );
 }

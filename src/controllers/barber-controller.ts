@@ -4,14 +4,17 @@ import { issueToken, readToken } from "../auth/tokens.js";
 import { tenantOf } from "../middlewares/load-tenant.js";
 import type { BarberAccount } from "../repositories/types.js";
 import type { BarberService } from "../services/barber-service.js";
+import type { BookingManagementService } from "../services/booking-management-service.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
 import { buildCookie, parseCookies } from "../utils/cookies.js";
 import { parseProfessionalId } from "../validations/admin.js";
+import { parseBookingId, parseSlotChange } from "../validations/booking.js";
 import { parseBarberCredentials, parseBarberLogin } from "../validations/barber.js";
 
 interface BarberControllerOptions {
   barbers: BarberService;
+  management: BookingManagementService;
   secret: string;
   secureCookies: boolean;
   clock: Clock;
@@ -20,12 +23,14 @@ interface BarberControllerOptions {
 /** A barber's own area (sign-in, their bookings) and the owner's control of barber logins. */
 export class BarberController {
   private readonly barbers: BarberService;
+  private readonly management: BookingManagementService;
   private readonly secret: string;
   private readonly secureCookies: boolean;
   private readonly clock: Clock;
 
   constructor(options: BarberControllerOptions) {
     this.barbers = options.barbers;
+    this.management = options.management;
     this.secret = options.secret;
     this.secureCookies = options.secureCookies;
     this.clock = options.clock;
@@ -82,6 +87,26 @@ export class BarberController {
   /** Reached only through requireBarber. Lists this barber's bookings that have not started yet. */
   bookings = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.barbers.upcomingBookings(tenantOf(req), barberOf(req)));
+  };
+
+  /** A barber can cancel only the bookings in their own chair. */
+  cancelBooking = async (req: Request, res: Response): Promise<void> => {
+    await this.management.cancel(tenantOf(req), parseBookingId(req.params.id), {
+      kind: "barber",
+      professionalId: barberOf(req).professionalId,
+    });
+    res.status(204).end();
+  };
+
+  /** A barber can move only the bookings in their own chair, and keeps them in that chair. */
+  moveBooking = async (req: Request, res: Response): Promise<void> => {
+    await this.management.move(
+      tenantOf(req),
+      parseBookingId(req.params.id),
+      { kind: "barber", professionalId: barberOf(req).professionalId },
+      parseSlotChange(req.body),
+    );
+    res.status(204).end();
   };
 
   /** A barber's own hours, read through their own area. */

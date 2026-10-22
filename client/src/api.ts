@@ -2,6 +2,7 @@ import type {
   Availability,
   BarberHours,
   BookingInput,
+  BookingView,
   Business,
   Confirmation,
   Day,
@@ -74,6 +75,29 @@ export function tenantApi(slug: string) {
 
     book: (input: BookingInput) => send<Confirmation>(`${base}/bookings`, json("POST", input)),
 
+    /** A customer's own booking, through the token in the link they were e-mailed. The token is sent in the body. */
+    manage: {
+      view: (token: string) => send<BookingView>(`${base}/manage/view`, json("POST", { token })),
+
+      cancel: (token: string) => send<BookingView>(`${base}/manage/cancel`, json("POST", { token })),
+
+      move: (token: string, date: string, time: string) =>
+        send<BookingView>(`${base}/manage/move`, json("POST", { token, date, time })),
+
+      /** The free start times for the same barber on a date, with this booking's own time counted as free. */
+      availability: (token: string, date: string) =>
+        send<{ date: string; times: string[] }>(`${base}/manage/availability`, json("POST", { token, date })),
+    },
+
+    /** Forgotten passwords. The request always gets the same reply; the link arrives by e-mail. */
+    passwordReset: {
+      request: (area: "owner" | "barber", email: string) =>
+        send<unknown>(`${base}/password-reset/${area}`, json("POST", { email })),
+
+      confirm: (token: string, password: string) =>
+        send<unknown>(`${base}/password-reset/confirm`, json("POST", { token, password })),
+    },
+
     /** A barber's own area. Separate from the owner's session. */
     barber: {
       login: (email: string, password: string) =>
@@ -84,6 +108,11 @@ export function tenantApi(slug: string) {
       session: () => send<{ ok: boolean; professional: BarberProfile }>(`${base}/barber/session`),
 
       bookings: () => send<BarberBooking[]>(`${base}/barber/bookings`),
+
+      cancelBooking: (id: string) => send<unknown>(`${base}/barber/bookings/${id}/cancel`, { method: "POST" }),
+
+      moveBooking: (id: string, date: string, time: string) =>
+        send<unknown>(`${base}/barber/bookings/${id}/move`, json("POST", { date, time })),
 
       hours: () => send<BarberHours>(`${base}/barber/hours`),
 
@@ -110,6 +139,11 @@ export function tenantApi(slug: string) {
 
       /** The shop's upcoming bookings across every barber, earliest first. */
       bookings: () => ownerSend<OwnerBooking[]>(`${owner}/bookings`, undefined, "bookings"),
+
+      cancelBooking: (id: string) => ownerSend<unknown>(`${owner}/bookings/${id}/cancel`, { method: "POST" }, "bookings"),
+
+      moveBooking: (id: string, date: string, time: string) =>
+        ownerSend<unknown>(`${owner}/bookings/${id}/move`, json("POST", { date, time }), "bookings"),
 
       /** Removes one photo. The server refuses it while it is the site's cover or a barber's portrait. */
       removeMedia: (name: string) =>

@@ -4,6 +4,7 @@ import { barberWeekToApi, barberWindow, parseBarberWeek, type BarberWeek } from 
 import { DEFAULT_BUSINESS } from "../domain/defaults.js";
 import type { Tenant } from "../domain/tenant.js";
 import type { BarberHoursRepository, BookingRepository, ProfessionalRepository, ServiceRepository } from "../repositories/types.js";
+import { BookingMessages } from "../services/booking-messages.js";
 import { BookingService } from "../services/booking-service.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
@@ -106,7 +107,8 @@ function availabilityService(hours: BarberWeek | null) {
     replace: async () => undefined,
   };
   const clock: Clock = { now: () => new Date("2030-01-01T10:00:00Z"), today: () => "2030-01-01" };
-  return new BookingService(services, professionals, bookings, clock, barberHours);
+  const messages = new BookingMessages({ secret: "test-secret-test-secret-test-secret-32", publicUrl: "https://shop.test", enabled: false }, clock);
+  return new BookingService(services, professionals, bookings, clock, barberHours, messages);
 }
 
 test("availability follows the barber's own hours", async () => {

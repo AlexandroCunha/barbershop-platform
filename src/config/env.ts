@@ -1,5 +1,6 @@
 import { isValidSlug } from "../domain/slug.js";
 import type { S3Settings } from "../media/s3-media-storage.js";
+import { parseMail, type MailConfig } from "./mail-config.js";
 
 /** Shortest accepted values, so the secrets cannot be guessed easily. */
 const MIN_SESSION_SECRET_LENGTH = 32;
@@ -23,6 +24,9 @@ export interface Config {
   /** Address of the barbershop the home page opens. Undefined means the first shop created. */
   homeShopSlug: string | undefined;
   media: MediaConfig;
+  /** The address the site is reached at, without a trailing slash. Links in e-mails are built from it. */
+  publicUrl: string;
+  mail: MailConfig;
 }
 
 /** Local disk for a single server; S3-compatible storage when several servers share the photos. */
@@ -88,6 +92,27 @@ function parseTrustProxyHops(value: string | undefined): number {
 
 const isTrue = (value: string | undefined): boolean => value?.toLowerCase() === "true";
 
+function parsePublicUrl(value: string | undefined, port: number, production: boolean): string {
+  const text = value?.trim();
+  if (!text) {
+    if (production) {
+      throw new Error("PUBLIC_URL is required on the live site, such as https://your-shop.example");
+    }
+    return `http://localhost:${port}`;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(text);
+  } catch {
+    throw new Error("PUBLIC_URL must be a full address, such as https://your-shop.example");
+  }
+  if (production && url.protocol !== "https:") {
+    throw new Error("PUBLIC_URL must use https on the live site");
+  }
+  return url.origin;
+}
+
 function parseHomeShop(value: string | undefined): string | undefined {
   const slug = value?.trim().toLowerCase();
   if (!slug) return undefined;
@@ -126,5 +151,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
     homeShopSlug: parseHomeShop(env.HOME_SHOP_SLUG),
     media: parseMedia(env),
+    publicUrl: parsePublicUrl(env.PUBLIC_URL, port, production),
+    mail: parseMail(env, production),
   };
 }

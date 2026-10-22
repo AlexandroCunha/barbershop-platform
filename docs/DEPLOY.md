@@ -26,6 +26,10 @@ Set these variables in the server's environment, or in a `.env` file that only t
 | `MEDIA_STORAGE` | no | `local` (default) keeps photos on this server's disk. `s3` stores them in a bucket. |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | when `MEDIA_STORAGE=s3` | Bucket and credentials. The app refuses to start if one is missing. |
 | `S3_REGION` | no | Defaults to `auto`, which is what R2 expects. |
+| `PUBLIC_URL` | yes, on the live site | The address the site is reached at, for example `https://your-shop.example`. E-mail links are built from it. |
+| `MAIL_TRANSPORT` | no | `smtp` sends e-mail. `off` (the default on the live site) sends none. `console` prints e-mail to the terminal and is refused on the live site. |
+| `MAIL_FROM` | when `MAIL_TRANSPORT=smtp` | The sender, for example `Barbershop <bookings@your-domain.example>`. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | when `MAIL_TRANSPORT=smtp` | The mail service's SMTP details. Port 465 uses TLS from the start; other ports use STARTTLS. `SMTP_SECURE=true` forces TLS. |
 
 ### `TRUST_PROXY`: read this before you set it
 
@@ -146,6 +150,23 @@ Running several servers is supported. The pieces that used to live in one proces
 2. Create an API token with read and write access to that bucket only.
 3. Set `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_BUCKET` to the bucket name, and the token's key pair as `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Leave `S3_REGION` at `auto`.
 4. Run the duplicate-name check from step 2 above.
+
+## E-mail
+
+The app sends four kinds of e-mail, all in plain text:
+
+- **Confirmation**, when a booking is made, with a link to see, cancel or move it.
+- **Reminder**, one day before the appointment, when that is still ahead. A move moves the reminder with it.
+- **Cancellation**, when a booking is cancelled by the customer, the barber or the owner.
+- **Password reset**, when an owner or a barber asks for one. The link works once, for one hour.
+
+Messages are written to a queue in the same database transaction as the change they report, and a background worker
+sends them every minute. A message that cannot be sent is retried, and given up on after five attempts. Addresses and
+text are cleared once a message is sent or given up on.
+
+To set up mail, choose an SMTP service (a transactional mail provider, or your domain's mail server), add its details
+to the environment, and set `MAIL_TRANSPORT=smtp`. Then make a test booking with your own address and check that the
+confirmation arrives and that its link opens the booking.
 
 ## Checklist
 

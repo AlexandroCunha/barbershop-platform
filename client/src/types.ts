@@ -12,6 +12,7 @@ export interface OwnerBooking {
   date: string;
   startTime: string;
   endTime: string;
+  serviceId: number;
   serviceName: string;
   professionalId: number;
   professionalName: string;
@@ -64,6 +65,7 @@ export interface BarberBooking {
   date: string;
   startTime: string;
   endTime: string;
+  serviceId: number;
   serviceName: string;
   durationMinutes: number;
   customerName: string;
@@ -118,4 +120,17 @@ export interface LicenseSummary {
 export interface OwnerSession {
   ok: boolean;
   license: LicenseSummary;
+}
+
+/** A customer's own booking, as the link in their e-mail shows it. */
+export interface BookingView {
+  id: string;
+  serviceId: number;
+  professionalId: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  serviceName: string;
+  barberName: string;
+  status: "upcoming" | "started" | "cancelled";
 }

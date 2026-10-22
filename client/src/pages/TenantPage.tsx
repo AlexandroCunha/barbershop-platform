@@ -3,12 +3,14 @@ import { tenantApi } from "../api";
 import { AdminPage } from "../admin/AdminPage";
 import { AccessPage } from "./AccessPage";
 import { BarberPage } from "./BarberPage";
+import { ManagePage } from "./ManagePage";
+import { ResetPage } from "./ResetPage";
 import { useAsync } from "../hooks";
 import { TenantContext } from "../tenant-context";
 import { NotFound } from "./Static";
 import { SitePage } from "./SitePage";
 
-export type ShopView = "site" | "admin" | "barber" | "access";
+export type ShopView = "site" | "admin" | "barber" | "access" | "manage" | "reset";
 
 /** Loads one barbershop, then shows its public site or its owner area. */
 export function TenantPage({ slug, view }: { slug: string; view: ShopView }) {
@@ -37,6 +39,10 @@ export function TenantPage({ slug, view }: { slug: string; view: ShopView }) {
         <AdminPage />
       ) : view === "barber" ? (
         <BarberPage />
+      ) : view === "manage" ? (
+        <ManagePage />
+      ) : view === "reset" ? (
+        <ResetPage />
       ) : (
         <AccessPage />
       )}

@@ -89,6 +89,8 @@ class Accounts implements BarberAccountRepository {
     throw new Error("not used by these tests");
   }
 
+  async updatePasswordHash(): Promise<void> {}
+
   async remove(): Promise<boolean> {
     throw new Error("not used by these tests");
   }

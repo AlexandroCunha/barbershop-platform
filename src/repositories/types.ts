@@ -96,6 +96,8 @@ export interface BarberAccountRepository {
   upsert(tenantId: number, professionalId: number, email: string, passwordHash: string): Promise<BarberAccount>;
   /** Removes the barber's login. Returns false when there was none. */
   remove(tenantId: number, professionalId: number): Promise<boolean>;
+  /** Stores a new password hash for an existing login. The caller ends the login's sessions. */
+  updatePasswordHash(id: number, passwordHash: string): Promise<void>;
 }
 
 export interface SessionRepository {
@@ -148,12 +150,84 @@ export interface BarberHoursRepository {
   replace(tenantId: number, professionalId: number, week: BarberWeek): Promise<void>;
 }
 
+/** A booking as stored, including whether it has been cancelled. */
+export interface BookingRecord extends Booking {
+  cancelledAt: Date | null;
+}
+
+export type NotificationKind = "confirmation" | "reminder" | "cancellation" | "moved";
+
+/** An e-mail about a booking. It is written to the outbox in the same transaction as the change it reports. */
+export interface NotificationDraft {
+  kind: NotificationKind;
+  toAddress: string;
+  subject: string;
+  body: string;
+  sendAt: Date;
+}
+
+/** Where a booking moves to. The end is derived from the service's length by the caller. */
+export interface BookingSlot {
+  date: string;
+  startMinute: number;
+  endMinute: number;
+}
+
+/**
+ * Active bookings are the ones that have not been cancelled. Only active bookings hold a time, show in
+ * the lists and count for availability.
+ */
 export interface BookingRepository {
-  /** Every booking on one date, across all barbers of the shop. */
+  /** Every active booking on one date, across all barbers of the shop. */
   findByDate(tenantId: number, isoDate: string): Promise<Booking[]>;
-  /** One barber's bookings on or after a date, in order. */
+  /** One barber's active bookings on or after a date, in order. */
   findFromDate(tenantId: number, professionalId: number, fromIsoDate: string): Promise<Booking[]>;
-  /** The shop's bookings on or after a date, across all barbers, earliest first, at most limit. */
+  /** The shop's active bookings on or after a date, across all barbers, earliest first, at most limit. */
   findUpcoming(tenantId: number, fromIsoDate: string, limit: number): Promise<Booking[]>;
-  create(tenantId: number, booking: NewBooking): Promise<Booking>;
+  /** One booking, cancelled or not. */
+  findById(tenantId: number, id: string): Promise<BookingRecord | null>;
+  /**
+   * Stores the booking and the messages `messagesFor` writes about it, in one transaction. Fails with 409
+   * when the time is taken.
+   */
+  create(tenantId: number, booking: NewBooking, messagesFor: (id: string) => NotificationDraft[]): Promise<Booking>;
+  /** Frees the booking's time and queues its messages. Returns false when it was already cancelled or is missing. */
+  cancel(tenantId: number, id: string, at: Date, messages: NotificationDraft[]): Promise<boolean>;
+  /** Moves an active booking to another time. Fails with 409 when that time is taken. Returns false when missing. */
+  move(tenantId: number, id: string, slot: BookingSlot, messages: NotificationDraft[]): Promise<boolean>;
+}
+
+export interface ClaimedNotification {
+  id: number;
+  toAddress: string;
+  subject: string;
+  body: string;
+  attempts: number;
+}
+
+/** The outbox of e-mails. A worker claims due messages, sends them and records the outcome. */
+export interface NotificationRepository {
+  /** Claims up to `limit` messages that are due. Each one is held until `leaseUntil`, so no other worker takes it. */
+  claimDue(now: Date, leaseUntil: Date, limit: number): Promise<ClaimedNotification[]>;
+  /** Marks the message sent and clears its address and text, which are no longer needed. */
+  markSent(id: number): Promise<void>;
+  markRetry(id: number, retryAt: Date): Promise<void>;
+  /** Gives up on the message and clears its address and text. */
+  markFailed(id: number): Promise<void>;
+}
+
+export interface PasswordResetTarget {
+  tenantId: number;
+  ownerId: number | null;
+  barberAccountId: number | null;
+}
+
+/** Password reset links. Only the hash of each token is stored. */
+export interface PasswordResetRepository {
+  create(reset: PasswordResetTarget & { tokenHash: string; expiresAt: Date }): Promise<void>;
+  /**
+   * Marks the link used and returns whom it was for, if it is still valid. The update is one statement,
+   * so when two requests use the same link only one of them gets the target.
+   */
+  consume(tokenHash: string, tenantId: number, now: Date): Promise<PasswordResetTarget | null>;
 }

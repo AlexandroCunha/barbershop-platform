@@ -29,6 +29,7 @@ export interface BarberBooking {
   date: string;
   startTime: string;
   endTime: string;
+  serviceId: number;
   serviceName: string;
   durationMinutes: number;
   customerName: string;
@@ -117,6 +118,7 @@ export class BarberService {
         date: booking.date,
         startTime: minutesToTime(booking.startMinute),
         endTime: minutesToTime(booking.endMinute),
+        serviceId: booking.serviceId,
         serviceName: serviceNames.get(booking.serviceId) ?? "Service",
         durationMinutes: booking.endMinute - booking.startMinute,
         customerName: booking.customerName,

@@ -12,6 +12,7 @@ import type {
 import { isUpcoming } from "../domain/upcoming-bookings.js";
 import { AppError } from "../utils/app-error.js";
 import { minuteOfDayIn, type Clock } from "../utils/clock.js";
+import { type BookingFacts, BookingMessages } from "./booking-messages.js";
 import { minutesToTime } from "../utils/time.js";
 
 /** One booking as the owner's list shows it, with the barber's name and the customer's contact details. */
@@ -20,6 +21,7 @@ export interface OwnerBooking {
   date: string;
   startTime: string;
   endTime: string;
+  serviceId: number;
   serviceName: string;
   professionalId: number;
   professionalName: string;
@@ -61,6 +63,7 @@ export class BookingService {
     private readonly bookings: BookingRepository,
     private readonly clock: Clock,
     private readonly hours: BarberHoursRepository,
+    private readonly messages: BookingMessages,
   ) {}
 
   listServices(tenant: Tenant): Promise<Service[]> {
@@ -71,18 +74,28 @@ export class BookingService {
     return this.professionals.findAll(tenant.id);
   }
 
-  /** Each candidate barber's free start times on the date. One barber when the customer has chosen. */
-  async availability(tenant: Tenant, serviceId: number, date: string, professionalId?: number): Promise<BarberTimes[]> {
+  /**
+   * Each candidate barber's free start times on the date. One barber when the customer has chosen.
+   * `excludeBookingId` treats one booking as not there, so a customer moving it sees its own time as free.
+   */
+  async availability(
+    tenant: Tenant,
+    serviceId: number,
+    date: string,
+    professionalId?: number,
+    excludeBookingId?: string,
+  ): Promise<BarberTimes[]> {
     this.requireBookingsOpen(tenant);
     const service = await this.requireService(tenant, serviceId);
     this.assertNotPast(tenant, date);
 
-    const busy = await this.busyByProfessional(tenant, date);
+    const busy = await this.busyByProfessional(tenant, date, excludeBookingId);
+    const notBefore = this.earliestStart(tenant, date);
 
     const barbers: BarberTimes[] = [];
     for (const professional of await this.candidates(tenant, professionalId)) {
       const window = await this.windowFor(tenant, professional.id, date);
-      const starts = freeStarts(window, service, busy.get(professional.id));
+      const starts = freeStarts(window, service, busy.get(professional.id), notBefore);
       barbers.push({ professionalId: professional.id, times: starts.map(minutesToTime) });
     }
     return barbers;
@@ -109,6 +122,7 @@ export class BookingService {
         date: booking.date,
         startTime: minutesToTime(booking.startMinute),
         endTime: minutesToTime(booking.endMinute),
+        serviceId: booking.serviceId,
         serviceName: serviceNames.get(booking.serviceId) ?? "Service",
         professionalId: booking.professionalId,
         professionalName: barberNames.get(booking.professionalId) ?? "Barber",
@@ -119,31 +133,66 @@ export class BookingService {
   }
 
   async book(tenant: Tenant, request: BookingRequest): Promise<Booking> {
-    this.requireBookingsOpen(tenant);
+    this.assertCanBook(tenant, request.date);
     const service = await this.requireService(tenant, request.serviceId);
-    this.assertNotPast(tenant, request.date);
-
     const professional = await this.requireProfessional(tenant, request.professionalId);
-    const window = await this.windowFor(tenant, professional.id, request.date);
-    const busy = await this.busyByProfessional(tenant, request.date);
-    if (!freeStarts(window, service, busy.get(professional.id)).includes(request.startMinute)) {
-      throw new AppError(409, "That time is no longer available");
-    }
+    await this.assertSlotFree(tenant, service, professional.id, request.date, request.startMinute);
 
-    // Two customers can still race for the same chair; the database's no-overlap rule refuses the second.
-    return this.bookings.create(tenant.id, {
-      serviceId: service.id,
-      professionalId: professional.id,
+    const endMinute = request.startMinute + service.durationMinutes;
+    const facts: BookingFacts = {
+      tenant,
+      serviceName: service.name,
+      barberName: professional.name,
       date: request.date,
       startMinute: request.startMinute,
-      endMinute: request.startMinute + service.durationMinutes,
+      endMinute,
       customerName: request.customerName,
       customerEmail: request.customerEmail,
-      customerPhone: request.customerPhone,
-    });
+    };
+
+    // Two customers can still race for the same chair; the database's no-overlap rule refuses the second.
+    return this.bookings.create(
+      tenant.id,
+      {
+        serviceId: service.id,
+        professionalId: professional.id,
+        date: request.date,
+        startMinute: request.startMinute,
+        endMinute,
+        customerName: request.customerName,
+        customerEmail: request.customerEmail,
+        customerPhone: request.customerPhone,
+      },
+      (id) => this.messages.created(facts, id),
+    );
   }
 
-  private requireBookingsOpen(tenant: Tenant): void {
+  /** Checks that the shop takes bookings now, and that the date is not in the past. */
+  assertCanBook(tenant: Tenant, date: string): void {
+    this.requireBookingsOpen(tenant);
+    this.assertNotPast(tenant, date);
+  }
+
+  /**
+   * Fails with 409 unless the barber's chair is free for the whole service at this start. A booking
+   * named by `excludeBookingId` does not count as taking its own time, which is what moving needs.
+   */
+  async assertSlotFree(
+    tenant: Tenant,
+    service: Service,
+    professionalId: number,
+    date: string,
+    startMinute: number,
+    excludeBookingId?: string,
+  ): Promise<void> {
+    const window = await this.windowFor(tenant, professionalId, date);
+    const busy = await this.busyByProfessional(tenant, date, excludeBookingId);
+    if (!freeStarts(window, service, busy.get(professionalId), this.earliestStart(tenant, date)).includes(startMinute)) {
+      throw new AppError(409, "That time is no longer available");
+    }
+  }
+
+  requireBookingsOpen(tenant: Tenant): void {
     const { state } = licenseInfo(tenant, this.clock.now());
     if (!allowsBookings(state)) {
       throw new AppError(403, "Online booking is not available for this barbershop right now. Please call the shop.");
@@ -158,7 +207,7 @@ export class BookingService {
     return [await this.requireProfessional(tenant, professionalId)];
   }
 
-  private async requireProfessional(tenant: Tenant, id: number): Promise<Professional> {
+  async requireProfessional(tenant: Tenant, id: number): Promise<Professional> {
     const professional = await this.professionals.findById(tenant.id, id);
     if (!professional) {
       throw new AppError(404, "Professional not found");
@@ -172,9 +221,14 @@ export class BookingService {
   }
 
   /** Every booking on the date, grouped by barber. One query, however many barbers there are. */
-  private async busyByProfessional(tenant: Tenant, isoDate: string): Promise<Map<number, BusyPeriod[]>> {
+  private async busyByProfessional(
+    tenant: Tenant,
+    isoDate: string,
+    excludeBookingId?: string,
+  ): Promise<Map<number, BusyPeriod[]>> {
     const busy = new Map<number, BusyPeriod[]>();
     for (const booking of await this.bookings.findByDate(tenant.id, isoDate)) {
+      if (booking.id === excludeBookingId) continue;
       const periods = busy.get(booking.professionalId) ?? [];
       periods.push({ startMinute: booking.startMinute, endMinute: booking.endMinute });
       busy.set(booking.professionalId, periods);
@@ -182,12 +236,18 @@ export class BookingService {
     return busy;
   }
 
-  private async requireService(tenant: Tenant, id: number): Promise<Service> {
+  async requireService(tenant: Tenant, id: number): Promise<Service> {
     const service = await this.services.findById(tenant.id, id);
     if (!service) {
       throw new AppError(404, "Service not found");
     }
     return service;
+  }
+
+  /** The first minute of the day a booking may start at: now for today, and the whole day for later dates. */
+  private earliestStart(tenant: Tenant, isoDate: string): number {
+    const zone = tenant.business.timeZone;
+    return isoDate === this.clock.today(zone) ? minuteOfDayIn(this.clock.now(), zone) : 0;
   }
 
   private assertNotPast(tenant: Tenant, date: string): void {
@@ -198,6 +258,9 @@ export class BookingService {
   }
 }
 
-function freeStarts(window: TimeWindow | null, service: Service, busy: BusyPeriod[] = []): number[] {
-  return availableStartMinutes({ window, durationMinutes: service.durationMinutes, busy });
+
+function freeStarts(window: TimeWindow | null, service: Service, busy: BusyPeriod[] = [], notBefore = 0): number[] {
+  return availableStartMinutes({ window, durationMinutes: service.durationMinutes, busy }).filter(
+    (start) => start >= notBefore,
+  );
 }

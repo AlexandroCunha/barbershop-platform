@@ -26,6 +26,23 @@ services:
         sync: false
       # Photos. Leave MEDIA_STORAGE empty to keep them on the server's disk, which is lost on every deploy.
       # Set it to s3 and fill the S3_* values with a Cloudflare R2 bucket (see docs/DEPLOY.md).
+      # The address the site is reached at. E-mail links are built from it, so it must be the live address (https).
+      - key: PUBLIC_URL
+        sync: false
+      # E-mail: confirmations, reminders, cancellations and password resets. Set MAIL_TRANSPORT=smtp with the
+      # SMTP details of a mail service (see docs/DEPLOY.md). Until then, no e-mail is sent.
+      - key: MAIL_TRANSPORT
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
       - key: MEDIA_STORAGE
         sync: false
       - key: S3_BUCKET

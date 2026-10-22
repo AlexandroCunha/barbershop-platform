@@ -1,6 +1,8 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Field, Notice, errorText } from "../admin/ui";
 import { ApiError } from "../api";
+import { ForgotPassword } from "../components/ForgotPassword";
+import { RescheduleForm } from "../components/booking/RescheduleForm";
 import { ScheduleEditor } from "../components/ScheduleEditor";
 import { formatDate } from "../format";
 import { useTenant } from "../tenant-context";
@@ -34,7 +36,10 @@ export function BarberPage() {
     <div className="owner barber-area">
       <p className="eyebrow">{business.name} · Barber area</p>
       {status.state === "signed-out" ? (
-        <BarberSignIn onSignedIn={(professional) => setStatus({ state: "signed-in", professional })} />
+        <>
+          <BarberSignIn onSignedIn={(professional) => setStatus({ state: "signed-in", professional })} />
+          <ForgotPassword area="barber" />
+        </>
       ) : (
         <>
           <BarberAgenda professional={status.professional} onSignedOut={() => setStatus({ state: "signed-out" })} />
@@ -96,19 +101,36 @@ function BarberAgenda({ professional, onSignedOut }: { professional: BarberProfi
   const { api } = useTenant();
   const [bookings, setBookings] = useState<BarberBooking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [moving, setMoving] = useState<string | null>(null);
+
+  const load = useCallback(
+    () =>
+      api.barber
+        .bookings()
+        .then(setBookings)
+        .catch((caught: unknown) => {
+          if (caught instanceof ApiError && caught.status === 401) {
+            onSignedOut();
+            return;
+          }
+          setError(errorText(caught));
+        }),
+    [api, onSignedOut],
+  );
 
   useEffect(() => {
-    api.barber
-      .bookings()
-      .then(setBookings)
-      .catch((caught: unknown) => {
-        if (caught instanceof ApiError && caught.status === 401) {
-          onSignedOut();
-          return;
-        }
-        setError(errorText(caught));
-      });
-  }, [api, onSignedOut]);
+    void load();
+  }, [load]);
+
+  async function cancel(booking: BarberBooking) {
+    if (!window.confirm(`Cancel ${booking.customerName}'s booking? The customer is e-mailed.`)) return;
+    try {
+      await api.barber.cancelBooking(booking.id);
+      await load();
+    } catch (caught) {
+      setError(errorText(caught));
+    }
+  }
 
   async function signOut() {
     await api.barber.logout().catch(() => undefined);
@@ -137,6 +159,35 @@ function BarberAgenda({ professional, onSignedOut }: { professional: BarberProfi
               <span>
                 {booking.serviceName} for {booking.customerName}
               </span>
+              <span className="owner-booking-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setMoving(moving === booking.id ? null : booking.id)}
+                >
+                  {moving === booking.id ? "Close" : "Move"}
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => void cancel(booking)}>
+                  Cancel
+                </button>
+              </span>
+              {moving === booking.id && (
+                <div className="owner-booking-move">
+                  <RescheduleForm
+                    currentDate={booking.date}
+                    loadTimes={(date) =>
+                      api.availability(booking.serviceId, date, professional.id).then((result) => result.barbers[0]?.times ?? [])
+                    }
+                    onMove={async (date, time) => {
+                      await api.barber.moveBooking(booking.id, date, time);
+                    }}
+                    onMoved={() => {
+                      setMoving(null);
+                      void load();
+                    }}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>

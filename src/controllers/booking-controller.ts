@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
 import type { Booking } from "../domain/types.js";
 import { tenantOf } from "../middlewares/load-tenant.js";
+import type { BookingManagementService } from "../services/booking-management-service.js";
 import type { BookingService } from "../services/booking-service.js";
 import { minutesToTime } from "../utils/time.js";
-import { parseAvailabilityQuery, parseBookingRequest } from "../validations/booking.js";
+import { parseAvailabilityQuery, parseBookingId, parseBookingRequest, parseSlotChange } from "../validations/booking.js";
 
 /** Public shape of a booking. The customer's contact details are never returned. */
 const toBookingResponse = (booking: Booking) => ({
@@ -17,7 +18,10 @@ const toBookingResponse = (booking: Booking) => ({
 });
 
 export class BookingController {
-  constructor(private readonly service: BookingService) {}
+  constructor(
+    private readonly service: BookingService,
+    private readonly management: BookingManagementService,
+  ) {}
 
   listServices = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.service.listServices(tenantOf(req)));
@@ -38,6 +42,18 @@ export class BookingController {
   /** Reached only through the owner's session. Includes the customers' contact details. */
   ownerBookings = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.service.upcomingForOwner(tenantOf(req)));
+  };
+
+  /** Reached only through the owner's session. */
+  ownerCancel = async (req: Request, res: Response): Promise<void> => {
+    await this.management.cancel(tenantOf(req), parseBookingId(req.params.id), { kind: "owner" });
+    res.status(204).end();
+  };
+
+  /** Reached only through the owner's session. */
+  ownerMove = async (req: Request, res: Response): Promise<void> => {
+    await this.management.move(tenantOf(req), parseBookingId(req.params.id), { kind: "owner" }, parseSlotChange(req.body));
+    res.status(204).end();
   };
 
   book = async (req: Request, res: Response): Promise<void> => {

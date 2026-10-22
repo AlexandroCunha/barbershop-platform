@@ -1,4 +1,5 @@
 import type { BookingRequest } from "../services/booking-service.js";
+import type { SlotChange } from "../services/booking-management-service.js";
 import { AppError } from "../utils/app-error.js";
 import { timeToMinutes } from "../utils/time.js";
 
@@ -63,7 +64,7 @@ function parseOptionalPositiveInt(value: unknown, field: string): number | undef
   return parsePositiveInt(value, field);
 }
 
-function parseDate(value: unknown): string {
+export function parseDate(value: unknown): string {
   if (typeof value !== "string" || !DATE_PATTERN.test(value)) {
     throw new AppError(400, "date must be in YYYY-MM-DD format");
   }
@@ -105,4 +106,23 @@ function parseEmail(value: unknown): string {
     throw new AppError(400, "customerEmail is not a valid email");
   }
   return email;
+}
+
+const BOOKING_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** A booking id from the address. Anything that is not an id is simply "not found". */
+export function parseBookingId(value: unknown): string {
+  if (typeof value !== "string" || !BOOKING_ID.test(value)) {
+    throw new AppError(404, "Booking not found");
+  }
+  return value;
+}
+
+/** A new date and start time for a booking. The barber stays the same. */
+export function parseSlotChange(body: unknown): SlotChange {
+  if (typeof body !== "object" || body === null) {
+    throw new AppError(400, "Request body must be a JSON object");
+  }
+  const input = body as Record<string, unknown>;
+  return { date: parseDate(input.date), startMinute: timeToMinutes(parseTime(input.time)) };
 }

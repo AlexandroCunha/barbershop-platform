@@ -118,3 +118,21 @@ export function parseLicense(body: unknown): LicenseInput {
     paidUntil: parseOptionalDate(input.paidUntil, "paidUntil"),
   };
 }
+
+/** A reset request names only the e-mail; the reply never says whether it has an account. */
+export function parseResetRequest(body: unknown): string {
+  const input = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+  return parseEmail(input.email);
+}
+
+const LINK_TOKEN = /^[A-Za-z0-9_-]{43}$/;
+
+/** A reset link's token and the new password. A malformed token is the same "no longer valid" as a used one. */
+export function parseResetConfirm(body: unknown): { token: string; password: string } {
+  const input = (typeof body === "object" && body !== null ? body : {}) as Record<string, unknown>;
+  const token = typeof input.token === "string" ? input.token : "";
+  if (!LINK_TOKEN.test(token)) {
+    throw new AppError(400, "This link is no longer valid. Ask for a new one.");
+  }
+  return { token, password: parseNewPassword(input.password) };
+}
