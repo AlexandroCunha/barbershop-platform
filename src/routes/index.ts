@@ -50,6 +50,7 @@ export function createApiRouter(deps: ApiDependencies): Router {
   owner.get("/session", deps.owner.session);
   owner.put("/password", deps.owner.changePassword);
   owner.put("/business", deps.admin.saveBusiness);
+  owner.put("/address", deps.admin.changeAddress);
   owner.get("/media", deps.admin.listMedia);
   owner.post("/media", express.raw({ type: MEDIA_CONTENT_TYPES, limit: "8mb" }), deps.admin.uploadMedia);
   owner.post("/services", deps.admin.createService);

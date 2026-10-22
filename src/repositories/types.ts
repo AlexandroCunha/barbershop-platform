@@ -38,6 +38,17 @@ export interface TenantRepository {
   /** Creates the shop, its owner and its starting services and barbers in one transaction. */
   create(input: NewTenant): Promise<Tenant>;
   updateBusiness(id: number, business: Business): Promise<void>;
+  /** When the shop's address last changed, or null if it never has. */
+  lastAddressChange(id: number): Promise<Date | null>;
+  /** True when the address is a shop's current address, or one a shop used before. */
+  addressInUse(slug: string): Promise<boolean>;
+  /** The current address of the shop that used this address before, or null. */
+  findRedirect(oldSlug: string): Promise<string | null>;
+  /**
+   * Moves the shop to a new address, keeping the old one as a redirect. Fails with 409 when the new
+   * address is taken in the meantime.
+   */
+  changeSlug(id: number, oldSlug: string, newSlug: string, now: Date): Promise<Tenant>;
   updateLicense(id: number, update: LicenseUpdate): Promise<Tenant | null>;
 }
 

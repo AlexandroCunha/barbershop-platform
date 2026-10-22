@@ -14,6 +14,8 @@ export interface AppOptions {
   trustProxyHops: number;
   /** Where each shop's photos are kept. */
   media: MediaStorage;
+  /** The current address of a shop that used this address before, or null. */
+  findRedirect: (oldSlug: string) => Promise<string | null>;
 }
 
 export function createApp(deps: ApiDependencies, options: AppOptions): express.Express {
@@ -47,6 +49,20 @@ export function createApp(deps: ApiDependencies, options: AppOptions): express.E
   });
 
   app.use(express.static(CLIENT_DIR));
+
+  // A shop's old address sends visitors to its current one, so links that were shared keep working.
+  app.use(async (req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    const first = req.path.split("/")[1] ?? "";
+    if (!first || first.includes(".")) return next();
+    try {
+      const current = await options.findRedirect(first);
+      if (!current) return next();
+      res.redirect(301, `/${current}${req.originalUrl.slice(first.length + 1)}`);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Every other address (a shop's site, its owner area, the platform page) is the single-page app.
   app.get("/*splat", (_req: Request, res: Response) => {

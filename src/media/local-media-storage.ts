@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rename, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { hasMediaExtension, isMediaFileName } from "../domain/media-name.js";
 import type { MediaStorage, StoredPhoto } from "./media-storage.js";
@@ -43,8 +43,31 @@ export class LocalMediaStorage implements MediaStorage {
     }
   }
 
+  async rename(from: string, to: string): Promise<void> {
+    const target = this.dirOf(to);
+    if (await exists(target)) {
+      throw new Error(`The photo folder for ${to} already exists`);
+    }
+    try {
+      await rename(this.dirOf(from), target);
+    } catch (error) {
+      // A shop that has never had a photo has no folder yet, so there is nothing to move.
+      if (!isErrorCode(error, "ENOENT")) throw error;
+    }
+  }
+
   private dirOf(shop: string): string {
     return path.join(this.root, shop);
+  }
+}
+
+async function exists(file: string): Promise<boolean> {
+  try {
+    await stat(file);
+    return true;
+  } catch (error) {
+    if (isErrorCode(error, "ENOENT")) return false;
+    throw error;
   }
 }
 

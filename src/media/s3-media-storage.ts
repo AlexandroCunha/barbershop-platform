@@ -1,4 +1,6 @@
 import {
+  CopyObjectCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -33,7 +35,31 @@ export class S3MediaStorage implements MediaStorage {
 
   async list(shop: string): Promise<string[]> {
     const prefix = `${shop}/`;
-    const names: string[] = [];
+    const keys = await this.keysWithPrefix(prefix);
+    return keys
+      .map((key) => key.slice(prefix.length))
+      .filter((name) => isMediaFileName(name) && hasMediaExtension(name))
+      .sort();
+  }
+
+  async rename(from: string, to: string): Promise<void> {
+    const keys = await this.keysWithPrefix(`${from}/`);
+    for (const key of keys) {
+      const name = key.slice(from.length + 1);
+      // Copy first, then delete, so a failure part-way never loses a photo.
+      await this.s3.send(
+        new CopyObjectCommand({
+          Bucket: this.bucket,
+          CopySource: `${this.bucket}/${key.split("/").map(encodeURIComponent).join("/")}`,
+          Key: keyOf(to, name),
+        }),
+      );
+      await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    }
+  }
+
+  private async keysWithPrefix(prefix: string): Promise<string[]> {
+    const keys: string[] = [];
     let token: string | undefined;
 
     do {
@@ -41,13 +67,12 @@ export class S3MediaStorage implements MediaStorage {
         new ListObjectsV2Command({ Bucket: this.bucket, Prefix: prefix, ContinuationToken: token }),
       );
       for (const item of page.Contents ?? []) {
-        const name = item.Key?.slice(prefix.length) ?? "";
-        if (isMediaFileName(name) && hasMediaExtension(name)) names.push(name);
+        if (item.Key) keys.push(item.Key);
       }
       token = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (token);
 
-    return names.sort();
+    return keys;
   }
 
   async putIfAbsent(shop: string, name: string, contentType: string, data: Buffer): Promise<boolean> {

@@ -18,6 +18,12 @@ import {
 export class AdminController {
   constructor(private readonly service: AdminService) {}
 
+  changeAddress = async (req: Request, res: Response): Promise<void> => {
+    const requested = typeof req.body?.slug === "string" ? req.body.slug : "";
+    const tenant = await this.service.changeAddress(tenantOf(req), requested);
+    res.json({ slug: tenant.slug });
+  };
+
   saveBusiness = async (req: Request, res: Response): Promise<void> => {
     res.json(await this.service.saveBusiness(tenantOf(req), parseBusiness(req.body)));
   };

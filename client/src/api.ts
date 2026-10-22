@@ -96,6 +96,9 @@ export function tenantApi(slug: string) {
       saveBusiness: (business: Business) =>
         ownerSend<Business>(`${owner}/business`, json("PUT", business), "business"),
 
+      /** Moves the shop to a new address. Returns the address it now has. */
+      changeAddress: (slug: string) => ownerSend<{ slug: string }>(`${owner}/address`, json("PUT", { slug }), "address"),
+
       listMedia: () => ownerSend<MediaItem[]>(`${owner}/media`, undefined, "media"),
 
       uploadMedia: (file: File) =>

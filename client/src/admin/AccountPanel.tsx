@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTenant } from "../tenant-context";
+import { AddressCard } from "./AddressCard";
 import { Field, Notice, errorText } from "./ui";
 
 /** Lets the signed-in owner change their password. Other sessions are signed out. */
@@ -38,6 +39,7 @@ export function AccountPanel() {
   }
 
   return (
+    <>
     <section className="owner-card">
       <h2>Change password</h2>
       <form className="owner-form" onSubmit={handleSubmit} noValidate>
@@ -78,5 +80,7 @@ export function AccountPanel() {
         </div>
       </form>
     </section>
+    <AddressCard />
+    </>
   );
 }

@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
 import {
+  CopyObjectCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -44,6 +46,15 @@ class MemoryMedia implements MediaStorage {
 
   async get(): Promise<StoredPhoto | null> {
     return null;
+  }
+
+  async rename(from: string, to: string): Promise<void> {
+    for (const key of [...this.files.keys()]) {
+      if (key.startsWith(`${from}/`)) {
+        this.files.set(`${to}/${key.slice(from.length + 1)}`, this.files.get(key)!);
+        this.files.delete(key);
+      }
+    }
   }
 }
 
@@ -117,6 +128,19 @@ class FakeS3 {
       const object = this.objects.get(command.input.Key!);
       if (!object) throw httpError("NoSuchKey", 404);
       return { Body: Readable.from([object.body]), ContentType: object.contentType, ContentLength: object.body.length };
+    }
+
+    if (command instanceof CopyObjectCommand) {
+      const [, ...keyParts] = command.input.CopySource!.split("/");
+      const source = this.objects.get(decodeURIComponent(keyParts.join("/")));
+      if (!source) throw httpError("NoSuchKey", 404);
+      this.objects.set(command.input.Key!, source);
+      return {};
+    }
+
+    if (command instanceof DeleteObjectCommand) {
+      this.objects.delete(command.input.Key!);
+      return {};
     }
 
     if (command instanceof ListObjectsV2Command) {

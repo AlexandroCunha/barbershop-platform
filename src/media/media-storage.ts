@@ -8,6 +8,8 @@ export interface MediaStorage {
   putIfAbsent(shop: string, name: string, contentType: string, data: Buffer): Promise<boolean>;
   /** The photo, or null when there is none under that name. The caller must consume or destroy the body. */
   get(shop: string, name: string): Promise<StoredPhoto | null>;
+  /** Moves every photo of one shop to another shop name. Nothing is moved if the target name is taken. */
+  rename(from: string, to: string): Promise<void>;
 }
 
 export interface StoredPhoto {

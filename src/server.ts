@@ -60,7 +60,7 @@ const app = createApp(
       clock,
     }),
     requireBarber: requireBarber(config.sessionSecret, barberAccounts, sessions),
-    admin: new AdminController(new AdminService(tenants, media, services, professionals)),
+    admin: new AdminController(new AdminService(tenants, media, services, professionals, clock)),
     owner: new OwnerController({
       accounts,
       sessions,
@@ -84,7 +84,12 @@ const app = createApp(
       store: limits,
     }),
   },
-  { secureCookies: config.secureCookies, trustProxyHops: config.trustProxyHops, media },
+  {
+    secureCookies: config.secureCookies,
+    trustProxyHops: config.trustProxyHops,
+    media,
+    findRedirect: (oldSlug) => tenants.findRedirect(oldSlug),
+  },
 );
 
 app.listen(config.port, () => {
