@@ -4,6 +4,7 @@
  *   /platform         platform owner
  *   /:slug            a barbershop's website
  *   /:slug/admin      that barbershop's owner area
+ *   /:slug/barber     that barbershop's barber area (own bookings only)
  *
  * The server uses the same rules for the shop address; keep the two in step.
  */
@@ -13,7 +14,7 @@ const RESERVED = new Set(["api", "admin", "platform", "media", "assets", "www", 
 export type Route =
   | { kind: "landing" }
   | { kind: "platform" }
-  | { kind: "shop"; slug: string; view: "site" | "admin" }
+  | { kind: "shop"; slug: string; view: "site" | "admin" | "barber" }
   | { kind: "not-found" };
 
 function isShopSlug(slug: string): boolean {
@@ -31,5 +32,6 @@ export function parseRoute(pathname: string): Route {
 
   if (section === undefined) return { kind: "shop", slug, view: "site" };
   if (section === "admin") return { kind: "shop", slug, view: "admin" };
+  if (section === "barber") return { kind: "shop", slug, view: "barber" };
   return { kind: "not-found" };
 }

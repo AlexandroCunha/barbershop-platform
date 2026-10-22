@@ -92,6 +92,13 @@ class InMemoryBookings implements BookingRepository {
     return this.items.filter((booking) => booking.tenantId === tenantId && booking.date === isoDate);
   }
 
+  async findFromDate(tenantId: number, professionalId: number, fromIsoDate: string): Promise<Booking[]> {
+    return this.items.filter(
+      (booking) =>
+        booking.tenantId === tenantId && booking.professionalId === professionalId && booking.date >= fromIsoDate,
+    );
+  }
+
   async create(tenantId: number, booking: NewBooking): Promise<Booking> {
     const clash = this.items.some(
       (existing) =>

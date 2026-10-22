@@ -5,6 +5,8 @@ import type {
   Confirmation,
   MediaItem,
   OwnerSession,
+  BarberBooking,
+  BarberProfile,
   Professional,
   Service,
   TenantSummary,
@@ -69,6 +71,18 @@ export function tenantApi(slug: string) {
 
     book: (input: BookingInput) => send<Confirmation>(`${base}/bookings`, json("POST", input)),
 
+    /** A barber's own area. Separate from the owner's session. */
+    barber: {
+      login: (email: string, password: string) =>
+        send<{ ok: boolean }>(`${base}/barber/login`, json("POST", { email, password })),
+
+      logout: () => send<unknown>(`${base}/barber/logout`, { method: "POST" }),
+
+      session: () => send<{ ok: boolean; professional: BarberProfile }>(`${base}/barber/session`),
+
+      bookings: () => send<BarberBooking[]>(`${base}/barber/bookings`),
+    },
+
     owner: {
       session: () => ownerSend<OwnerSession>(`${owner}/session`, undefined, "session"),
 
@@ -108,6 +122,17 @@ export function tenantApi(slug: string) {
 
       updateProfessional: (id: number, patch: Partial<Omit<Professional, "id">>) =>
         ownerSend<Professional>(`${owner}/professionals/${id}`, json("PATCH", patch), "professionals"),
+
+      /** Creates or replaces a barber's login. Their open sessions end at once. */
+      setBarberLogin: (professionalId: number, email: string, password: string) =>
+        ownerSend<{ email: string }>(
+          `${owner}/professionals/${professionalId}/login`,
+          json("PUT", { email, password }),
+          "barber-login",
+        ),
+
+      removeBarberLogin: (professionalId: number) =>
+        ownerSend<unknown>(`${owner}/professionals/${professionalId}/login`, { method: "DELETE" }, "barber-login"),
     },
   };
 }

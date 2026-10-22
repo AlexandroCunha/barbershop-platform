@@ -50,6 +50,16 @@ export class PgBookingRepository implements BookingRepository {
     return rows.map(toBooking);
   }
 
+  async findFromDate(tenantId: number, professionalId: number, fromIsoDate: string): Promise<Booking[]> {
+    const { rows } = await this.db.query<BookingRow>(
+      `SELECT ${COLUMNS} FROM bookings
+       WHERE tenant_id = $1 AND professional_id = $2 AND booking_date >= $3
+       ORDER BY booking_date, start_minute`,
+      [tenantId, professionalId, fromIsoDate],
+    );
+    return rows.map(toBooking);
+  }
+
   async create(tenantId: number, booking: NewBooking): Promise<Booking> {
     try {
       const { rows } = await this.db.query<BookingRow>(

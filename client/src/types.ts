@@ -38,6 +38,22 @@ export interface Professional {
   photo: string | null;
 }
 
+/** One of a barber's own upcoming bookings. Contact details are not included. */
+export interface BarberBooking {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  serviceName: string;
+  durationMinutes: number;
+  customerName: string;
+}
+
+export interface BarberProfile {
+  id: number;
+  name: string;
+}
+
 export interface Availability {
   date: string;
   times: string[];

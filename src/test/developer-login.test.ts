@@ -46,6 +46,8 @@ class InMemorySessions implements SessionRepository {
   async revoke(): Promise<void> {}
 
   async revokeAllForOwner(): Promise<void> {}
+
+  async revokeAllForBarberAccount(): Promise<void> {}
 }
 
 function setup(email: string) {

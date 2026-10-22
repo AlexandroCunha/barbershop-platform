@@ -1,12 +1,13 @@
 import { useEffect, useMemo } from "react";
 import { tenantApi } from "../api";
 import { AdminPage } from "../admin/AdminPage";
+import { BarberPage } from "./BarberPage";
 import { useAsync } from "../hooks";
 import { TenantContext } from "../tenant-context";
 import { NotFound } from "./Static";
 import { SitePage } from "./SitePage";
 
-export type ShopView = "site" | "admin";
+export type ShopView = "site" | "admin" | "barber";
 
 /** Loads one barbershop, then shows its public site or its owner area. */
 export function TenantPage({ slug, view }: { slug: string; view: ShopView }) {
@@ -29,7 +30,7 @@ export function TenantPage({ slug, view }: { slug: string; view: ShopView }) {
 
   return (
     <TenantContext.Provider value={{ slug, api, business: profile }}>
-      {view === "site" ? <SitePage /> : <AdminPage />}
+      {view === "site" ? <SitePage /> : view === "admin" ? <AdminPage /> : <BarberPage />}
     </TenantContext.Provider>
   );
 }

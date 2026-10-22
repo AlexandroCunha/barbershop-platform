@@ -50,7 +50,7 @@ export interface OwnerRepository {
   replacePasswordHash(id: number, passwordHash: string): Promise<void>;
 }
 
-export type SessionKind = "owner" | "platform";
+export type SessionKind = "owner" | "platform" | "barber";
 
 export interface SessionRecord {
   id: string;
@@ -61,7 +61,31 @@ export interface SessionRecord {
   ownerId: number | null;
   /** Set for platform sessions only: the developer who signed in. */
   developerId: number | null;
+  /** Set for barber sessions only. */
+  barberAccountId: number | null;
   expiresAt: Date;
+}
+
+/** A barber's own login for one shop. The password is stored as a hash only. */
+export interface BarberAccount {
+  id: number;
+  tenantId: number;
+  professionalId: number;
+  email: string;
+  passwordHash: string;
+}
+
+export interface BarberAccountRepository {
+  findByEmail(tenantId: number, email: string): Promise<BarberAccount | null>;
+  findById(id: number): Promise<BarberAccount | null>;
+  findByProfessional(tenantId: number, professionalId: number): Promise<BarberAccount | null>;
+  /**
+   * Creates the barber's login, or replaces its email and password. Fails with 409 when the email
+   * already belongs to another barber of the same shop.
+   */
+  upsert(tenantId: number, professionalId: number, email: string, passwordHash: string): Promise<BarberAccount>;
+  /** Removes the barber's login. Returns false when there was none. */
+  remove(tenantId: number, professionalId: number): Promise<boolean>;
 }
 
 /** A developer account for the platform area. The password is stored as a hash only. */
@@ -84,6 +108,8 @@ export interface SessionRepository {
   revoke(id: string): Promise<void>;
   /** Ends every session of one owner, for example after a password change. */
   revokeAllForOwner(ownerId: number): Promise<void>;
+  /** Ends every session of one barber login, for example when the login is replaced or removed. */
+  revokeAllForBarberAccount(barberAccountId: number): Promise<void>;
 }
 
 export interface NewService {
@@ -120,5 +146,7 @@ export interface ProfessionalRepository {
 export interface BookingRepository {
   /** Every booking on one date, across all barbers of the shop. */
   findByDate(tenantId: number, isoDate: string): Promise<Booking[]>;
+  /** One barber's bookings on or after a date, in order. */
+  findFromDate(tenantId: number, professionalId: number, fromIsoDate: string): Promise<Booking[]>;
   create(tenantId: number, booking: NewBooking): Promise<Booking>;
 }

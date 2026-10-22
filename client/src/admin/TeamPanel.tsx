@@ -1,8 +1,9 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { mediaSrc } from "../media";
 import { useTenant } from "../tenant-context";
 import type { MediaItem, Professional } from "../types";
 import { Field, Notice, errorText } from "./ui";
+import { BarberLoginCard } from "./BarberLoginCard";
 import { NewBarberForm } from "./NewBarberForm";
 
 export function TeamPanel() {
@@ -29,15 +30,17 @@ export function TeamPanel() {
     <div className="owner-stack">
       <NewBarberForm onCreated={(created) => setPeople((current) => [...(current ?? []), created])} />
       {people.map((person) => (
-        <BarberCard
-          key={person.id}
-          person={person}
-          media={media}
-          onSaved={(saved) =>
-            setPeople((current) => current?.map((item) => (item.id === saved.id ? saved : item)) ?? null)
-          }
-          onRemoved={(id) => setPeople((current) => current?.filter((item) => item.id !== id) ?? null)}
-        />
+        <Fragment key={person.id}>
+          <BarberCard
+            person={person}
+            media={media}
+            onSaved={(saved) =>
+              setPeople((current) => current?.map((item) => (item.id === saved.id ? saved : item)) ?? null)
+            }
+            onRemoved={(id) => setPeople((current) => current?.filter((item) => item.id !== id) ?? null)}
+          />
+          <BarberLoginCard person={person} />
+        </Fragment>
       ))}
     </div>
   );

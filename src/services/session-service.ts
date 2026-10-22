@@ -20,11 +20,27 @@ export class SessionService {
   ) {}
 
   openOwnerSession(owner: { tenantId: number; ownerId: number }): Promise<OpenedSession> {
-    return this.open({ kind: "owner", tenantId: owner.tenantId, ownerId: owner.ownerId, developerId: null });
+    return this.open({
+      kind: "owner",
+      tenantId: owner.tenantId,
+      ownerId: owner.ownerId,
+      developerId: null,
+      barberAccountId: null,
+    });
   }
 
   openPlatformSession(developerId: number): Promise<OpenedSession> {
-    return this.open({ kind: "platform", tenantId: null, ownerId: null, developerId });
+    return this.open({ kind: "platform", tenantId: null, ownerId: null, developerId, barberAccountId: null });
+  }
+
+  openBarberSession(barber: { tenantId: number; barberAccountId: number }): Promise<OpenedSession> {
+    return this.open({
+      kind: "barber",
+      tenantId: barber.tenantId,
+      ownerId: null,
+      developerId: null,
+      barberAccountId: barber.barberAccountId,
+    });
   }
 
   /** The session when it is still active, otherwise null. */
@@ -38,6 +54,10 @@ export class SessionService {
 
   revokeAllForOwner(ownerId: number): Promise<void> {
     return this.sessions.revokeAllForOwner(ownerId);
+  }
+
+  revokeAllForBarberAccount(barberAccountId: number): Promise<void> {
+    return this.sessions.revokeAllForBarberAccount(barberAccountId);
   }
 
   private async open(record: Omit<SessionRecord, "id" | "expiresAt">): Promise<OpenedSession> {

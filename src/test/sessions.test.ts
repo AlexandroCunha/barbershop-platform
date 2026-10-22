@@ -45,6 +45,7 @@ class InMemorySessions implements SessionRepository {
       tenantId: row.tenantId,
       ownerId: row.ownerId,
       developerId: row.developerId,
+      barberAccountId: row.barberAccountId,
       expiresAt: row.expiresAt,
     };
   }
@@ -52,6 +53,12 @@ class InMemorySessions implements SessionRepository {
   async revoke(id: string): Promise<void> {
     const row = this.rows.get(id);
     if (row) row.revoked = true;
+  }
+
+  async revokeAllForBarberAccount(barberAccountId: number): Promise<void> {
+    for (const row of this.rows.values()) {
+      if (row.barberAccountId === barberAccountId) row.revoked = true;
+    }
   }
 
   async revokeAllForOwner(ownerId: number): Promise<void> {

@@ -41,6 +41,7 @@ export function AccessMenu({ ownerSlug }: Props) {
               </div>
               <nav className="access-links">
                 {ownerSlug && <a href={`/${ownerSlug}/admin`}>Owner area</a>}
+                {ownerSlug && <a href={`/${ownerSlug}/barber`}>Barber area</a>}
                 <a href="/platform">Developer area</a>
               </nav>
             </aside>

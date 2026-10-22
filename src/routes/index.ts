@@ -1,5 +1,6 @@
 import express, { Router, type RequestHandler } from "express";
 import type { AdminController } from "../controllers/admin-controller.js";
+import type { BarberController } from "../controllers/barber-controller.js";
 import type { BookingController } from "../controllers/booking-controller.js";
 import type { OwnerController } from "../controllers/owner-controller.js";
 import type { PlatformController } from "../controllers/platform-controller.js";
@@ -12,6 +13,9 @@ export interface ApiDependencies {
   tenants: TenantRepository;
   booking: BookingController;
   site: SiteController;
+  barber: BarberController;
+  /** Lets through only a barber signed in to their own area of the shop. */
+  requireBarber: RequestHandler;
   admin: AdminController;
   owner: OwnerController;
   platform: PlatformController;
@@ -58,7 +62,19 @@ export function createApiRouter(deps: ApiDependencies): Router {
   owner.delete("/professionals/:id", deps.admin.archiveProfessional);
   owner.patch("/services/:id", deps.admin.updateService);
   owner.patch("/professionals/:id", deps.admin.updateProfessional);
+  // Creating, replacing and removing a barber's login is an owner action.
+  owner.put("/professionals/:id/login", deps.barber.setLogin);
+  owner.delete("/professionals/:id/login", deps.barber.removeLogin);
   shop.use("/owner", owner);
+
+  // A barber's own area: sign-in, sign-out, and only their upcoming bookings.
+  shop.post("/barber/login", deps.loginLimit, deps.barber.login);
+  shop.post("/barber/logout", deps.barber.logout);
+  const barber = Router();
+  barber.use(deps.requireBarber);
+  barber.get("/session", deps.barber.session);
+  barber.get("/bookings", deps.barber.bookings);
+  shop.use("/barber", barber);
 
   // The shop the home page opens. Not tied to a shop address.
   router.get("/home", deps.site.home);
