@@ -1,8 +1,7 @@
+import { digitsOnly } from "../contact";
 import { currentDay, DAY_LABELS, WEEK_ORDER } from "../format";
 import { useBusiness } from "../tenant-context";
 
-/** Keeps only the digits of a phone number, for wa.me links. */
-const digitsOnly = (value: string): string => value.replace(/\D/g, "");
 
 export function Visit() {
   const business = useBusiness();

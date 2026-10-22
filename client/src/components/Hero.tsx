@@ -1,3 +1,4 @@
+import { mapsHref, whatsappNumber } from "../contact";
 import { openStatus } from "../format";
 import { mediaSrc } from "../media";
 import { useTenant } from "../tenant-context";
@@ -6,6 +7,8 @@ export function Hero() {
   const { slug, business } = useTenant();
   const status = openStatus(business);
   const image = business.heroImage ? mediaSrc(slug, business.heroImage) : null;
+  const maps = mapsHref(business);
+  const whatsapp = whatsappNumber(business);
 
   return (
     <section id="top" className="hero">
@@ -32,14 +35,24 @@ export function Hero() {
             {business.address.street && (
               <div>
                 <dt>Find us</dt>
-                <dd>{business.address.street}</dd>
+                <dd>
+                  {maps ? (
+                    <a href={maps} target="_blank" rel="noopener noreferrer">
+                      {business.address.street}
+                    </a>
+                  ) : (
+                    business.address.street
+                  )}
+                </dd>
               </div>
             )}
-            {business.phone && (
+            {whatsapp && (
               <div>
-                <dt>Call</dt>
+                <dt>WhatsApp</dt>
                 <dd>
-                  <a href={`tel:${business.phone}`}>{business.phone}</a>
+                  <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer">
+                    {business.whatsapp || business.phone}
+                  </a>
                 </dd>
               </div>
             )}
