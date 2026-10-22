@@ -118,7 +118,8 @@ export type TenantApi = ReturnType<typeof tenantApi>;
 export const platformApi = {
   session: () => send<{ ok: boolean }>("/api/platform/session"),
 
-  login: (token: string) => send<{ ok: boolean }>("/api/platform/session", json("POST", { token })),
+  login: (email: string, password: string) =>
+    send<{ ok: boolean }>("/api/platform/session", json("POST", { email, password })),
 
   logout: () => send<unknown>("/api/platform/logout", { method: "POST" }),
 

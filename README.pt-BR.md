@@ -109,10 +109,9 @@ Crie os dois segredos:
 
 ```bash
 openssl rand -hex 32            # SESSION_SECRET
-openssl rand -hex 24            # PLATFORM_ADMIN_TOKEN
 ```
 
-Depois abra **`http://localhost:3100/platform`**, entre com o `PLATFORM_ADMIN_TOKEN` e cadastre a
+Crie uma conta de desenvolvedor com `npm run developer:create -- voce@exemplo.com`, depois abra **`http://localhost:3100/platform`**, entre e cadastre a
 primeira barbearia. O site dela fica em `/<endereço>` e a área do dono em `/<endereço>/admin`. 🎉
 
 > 💡 Para desenvolver, rode `npm run dev:api` e `npm run dev:web` em dois terminais.
@@ -280,7 +279,6 @@ media/<shop>/               as fotos de cada barbearia (não versionadas)
 | --- | :---: | --- |
 | `DATABASE_URL` | ✅ | String de conexão com o PostgreSQL |
 | `SESSION_SECRET` | ✅ (32+ caracteres) | Assina as sessões do dono e da plataforma. Trocar desconecta todo mundo |
-| `PLATFORM_ADMIN_TOKEN` | para `/platform` (24+ caracteres) | O token de acesso do dono da plataforma |
 | `PORT` | | Porta do site e da API. Padrão `3100` |
 | `COOKIE_SECURE` | | Envia cookies só por HTTPS. Ligada por padrão em produção |
 | `TRUST_PROXY` | | Número de proxies reversos na frente da aplicação (geralmente `1`). Deixe sem valor se não houver proxy. Veja o [guia de deploy](docs/DEPLOY.md) |

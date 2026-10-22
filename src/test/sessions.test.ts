@@ -39,7 +39,14 @@ class InMemorySessions implements SessionRepository {
   async findActive(id: string, now: Date): Promise<SessionRecord | null> {
     const row = this.rows.get(id);
     if (!row || row.revoked || row.expiresAt <= now) return null;
-    return { id: row.id, kind: row.kind, tenantId: row.tenantId, ownerId: row.ownerId, expiresAt: row.expiresAt };
+    return {
+      id: row.id,
+      kind: row.kind,
+      tenantId: row.tenantId,
+      ownerId: row.ownerId,
+      developerId: row.developerId,
+      expiresAt: row.expiresAt,
+    };
   }
 
   async revoke(id: string): Promise<void> {
@@ -166,7 +173,7 @@ test("an owner token without a session record, or with an unknown one, is refuse
 
 test("a platform session works until it is revoked, and a platform token cannot open owner areas", async () => {
   const { sessions } = setup();
-  const opened = await sessions.openPlatformSession();
+  const opened = await sessions.openPlatformSession(5);
   const token = issueToken(PLATFORM_KEY, { kind: "platform", exp: opened.expiresAt, sid: opened.id });
   const guard = requirePlatform(PLATFORM_KEY, sessions);
 

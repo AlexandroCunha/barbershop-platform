@@ -17,7 +17,6 @@ Set these variables in the server's environment, or in a `.env` file that only t
 | --- | :---: | --- |
 | `DATABASE_URL` | yes | PostgreSQL connection string. |
 | `SESSION_SECRET` | yes | At least 32 characters. Generate with `openssl rand -hex 32`. Changing it signs everyone out. |
-| `PLATFORM_ADMIN_TOKEN` | for `/platform` | At least 24 characters. Generate with `openssl rand -hex 24`. |
 | `NODE_ENV` | yes | Set to `production`. This turns on secure cookies by default. |
 | `PORT` | no | Defaults to `3100`. Bind it to `127.0.0.1` so only the proxy can reach it. |
 | `TRUST_PROXY` | see below | The number of reverse proxies in front of the app. |
@@ -64,7 +63,13 @@ The build needs the development dependencies (TypeScript, Vite and the type pack
 
 Run the app under a process manager (systemd, or pm2) so it restarts after a crash or reboot. Migrations are applied once each and recorded in `schema_migrations`, so running `npm run db:migrate` again is safe.
 
-Then open `https://your-domain/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, and create the first barbershop.
+Create a developer account, then open `https://your-domain/platform` and create the first barbershop:
+
+```bash
+DATABASE_URL="<the production connection string>" npm run developer:create -- you@example.com
+```
+
+The command asks for the password twice and does not show it. Run it in your own terminal, with the connection string copied from the database console, and do not paste it anywhere else.
 
 ## Render and Neon
 
@@ -78,13 +83,12 @@ This is the setup used for online tests. The app runs on Render, and the databas
 
 ### 2. Application (Render)
 
-1. In Render, choose **New > Blueprint** and select the repository `AlexandroCunha/barbearia`.
-2. Render reads `render.yaml` and asks for three values, which are not stored in git:
+1. In Render, choose **New > Blueprint** and select the repository `AlexandroCunha/barbershop-platform`.
+2. Render reads `render.yaml` and asks for two values, which are not stored in git:
    - `DATABASE_URL`: the Neon connection string from step 1.
    - `SESSION_SECRET`: generate with `openssl rand -hex 32`.
-   - `PLATFORM_ADMIN_TOKEN`: generate with `openssl rand -hex 24`.
 3. Apply the blueprint. The first deploy runs the migrations and then starts the app.
-4. Open `https://<your-service>.onrender.com/platform`, sign in with `PLATFORM_ADMIN_TOKEN`, and create the first barbershop.
+4. Create a developer account (see [First deployment](#first-deployment)), then open `https://<your-service>.onrender.com/platform` and create the first barbershop.
 
 ### Limits of the free plan
 
@@ -133,7 +137,7 @@ Running several servers is supported. The pieces that used to live in one proces
 ## Checklist
 
 - [ ] `NODE_ENV=production`, and the site is served over HTTPS only.
-- [ ] `SESSION_SECRET` and `PLATFORM_ADMIN_TOKEN` are long random values, not the examples.
+- [ ] `SESSION_SECRET` is a long random value, not the example. Developer accounts have strong passwords.
 - [ ] `TRUST_PROXY=1` only if the proxy is the only route in, and unset otherwise.
 - [ ] The app's port is not reachable from the internet.
 - [ ] With several servers: `MEDIA_STORAGE=s3`, and the duplicate-name check passed.

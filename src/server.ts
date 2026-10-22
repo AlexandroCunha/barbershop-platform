@@ -15,6 +15,7 @@ import { rateLimit } from "./middlewares/rate-limit.js";
 import { LocalMediaStorage } from "./media/local-media-storage.js";
 import { createS3MediaStorage } from "./media/s3-media-storage.js";
 import { PgBookingRepository } from "./repositories/pg-booking-repository.js";
+import { PgDeveloperRepository } from "./repositories/pg-developer-repository.js";
 import { PgRateLimitStore } from "./repositories/pg-rate-limit-store.js";
 import { PgOwnerRepository } from "./repositories/pg-owner-repository.js";
 import { PgProfessionalRepository } from "./repositories/pg-professional-repository.js";
@@ -38,13 +39,11 @@ const owners = new PgOwnerRepository(pool);
 const services = new PgServiceRepository(pool);
 const professionals = new PgProfessionalRepository(pool);
 const bookings = new PgBookingRepository(pool);
+const developers = new PgDeveloperRepository(pool);
 const sessions = new SessionService(new PgSessionRepository(pool), clock);
 
-// The platform key is derived from the platform token, so rotating the token ends platform sessions.
-const platformKey =
-  config.platformToken === undefined
-    ? undefined
-    : createHmac("sha256", config.sessionSecret).update(`platform:${config.platformToken}`).digest("base64url");
+// Platform sessions are signed with a key derived from the session secret, separate from the owner key.
+const platformKey = createHmac("sha256", config.sessionSecret).update("platform-session").digest("base64url");
 
 const accounts = new AccountService(tenants, owners, clock);
 const media = config.media.kind === "s3" ? createS3MediaStorage(config.media.settings) : new LocalMediaStorage(MEDIA_DIR);
@@ -65,7 +64,7 @@ const app = createApp(
       clock,
     }),
     platform: new PlatformController({
-      platformToken: config.platformToken,
+      developers,
       platformKey,
       accounts,
       sessions,
@@ -94,9 +93,5 @@ const app = createApp(
 
 app.listen(config.port, () => {
   console.log(`Barbershop Platform running at http://localhost:${config.port}`);
-  console.log(
-    config.platformToken === undefined
-      ? "Platform area disabled: PLATFORM_ADMIN_TOKEN is not set"
-      : "Platform area: /platform",
-  );
+  console.log("Platform area: /platform");
 });

@@ -3,7 +3,8 @@
  *   1 owner, 3 new barbers, 6 customers.
  *
  * It talks to a running server over HTTP and checks the database directly.
- * Usage: npm run simulate   (server must be running; .env must hold PLATFORM_ADMIN_TOKEN)
+ * Usage: npm run simulate   (server must be running; .env must hold SIM_DEVELOPER_EMAIL and
+ *   SIM_DEVELOPER_PASSWORD, for a developer account created with npm run developer:create)
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -88,8 +89,10 @@ const YESTERDAY = (() => {
 // ---------------------------------------------------------------------------
 // Platform owner creates the shop.
 // ---------------------------------------------------------------------------
-const platform = await call("POST", "/api/platform/session", { body: { token: env.PLATFORM_ADMIN_TOKEN } });
-log("platform", "signs in with the platform token", platform.status === 200, `HTTP ${platform.status}`);
+const platform = await call("POST", "/api/platform/session", {
+  body: { email: env.SIM_DEVELOPER_EMAIL, password: env.SIM_DEVELOPER_PASSWORD },
+});
+log("platform", "signs in as a developer", platform.status === 200, `HTTP ${platform.status}`);
 const platformCookie = platform.cookie;
 
 const created = await call("POST", "/api/platform/tenants", {

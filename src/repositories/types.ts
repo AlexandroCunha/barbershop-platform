@@ -59,7 +59,22 @@ export interface SessionRecord {
   tenantId: number | null;
   /** Set for owner sessions only. */
   ownerId: number | null;
+  /** Set for platform sessions only: the developer who signed in. */
+  developerId: number | null;
   expiresAt: Date;
+}
+
+/** A developer account for the platform area. The password is stored as a hash only. */
+export interface DeveloperAccount {
+  id: number;
+  email: string;
+  passwordHash: string;
+}
+
+export interface DeveloperRepository {
+  findByEmail(email: string): Promise<DeveloperAccount | null>;
+  /** Creates a developer. Fails with 409 when the email is already registered. */
+  create(email: string, passwordHash: string): Promise<DeveloperAccount>;
 }
 
 export interface SessionRepository {

@@ -3,15 +3,12 @@ import type { S3Settings } from "../media/s3-media-storage.js";
 
 /** Shortest accepted values, so the secrets cannot be guessed easily. */
 const MIN_SESSION_SECRET_LENGTH = 32;
-const MIN_PLATFORM_TOKEN_LENGTH = 24;
 
 export interface Config {
   port: number;
   databaseUrl: string;
   /** Signs owner and platform sessions. Changing it signs everyone out. */
   sessionSecret: string;
-  /** Platform owner's token for /platform. Undefined keeps the platform area closed. */
-  platformToken: string | undefined;
   /** Send session cookies only over HTTPS. On by default in production. */
   secureCookies: boolean;
   /**
@@ -115,18 +112,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`SESSION_SECRET must be at least ${MIN_SESSION_SECRET_LENGTH} characters long`);
   }
 
-  const platformToken = env.PLATFORM_ADMIN_TOKEN?.trim() || undefined;
-  if (platformToken !== undefined && platformToken.length < MIN_PLATFORM_TOKEN_LENGTH) {
-    throw new Error(`PLATFORM_ADMIN_TOKEN must be at least ${MIN_PLATFORM_TOKEN_LENGTH} characters long`);
-  }
-
   const production = env.NODE_ENV === "production";
 
   return {
     port,
     databaseUrl,
     sessionSecret,
-    platformToken,
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
     trustProxyHops: parseTrustProxyHops(env.TRUST_PROXY),
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),

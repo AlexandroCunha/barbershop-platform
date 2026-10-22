@@ -109,10 +109,9 @@ Create the two secrets:
 
 ```bash
 openssl rand -hex 32            # SESSION_SECRET
-openssl rand -hex 24            # PLATFORM_ADMIN_TOKEN
 ```
 
-Then open **`http://localhost:3100/platform`**, sign in with `PLATFORM_ADMIN_TOKEN`, and add your first
+Create a developer account with `npm run developer:create -- you@example.com`, then open **`http://localhost:3100/platform`**, sign in, and add your first
 barbershop. Its website lives at `/<address>` and its owner area at `/<address>/admin`. 🎉
 
 > 💡 For development, run `npm run dev:api` and `npm run dev:web` in two terminals.
@@ -280,7 +279,6 @@ media/<shop>/               each shop's photos (not committed)
 | --- | :---: | --- |
 | `DATABASE_URL` | ✅ | PostgreSQL connection string |
 | `SESSION_SECRET` | ✅ (32+ chars) | Signs owner and platform sessions. Changing it signs everyone out |
-| `PLATFORM_ADMIN_TOKEN` | for `/platform` (24+ chars) | The platform owner's sign-in token |
 | `PORT` | | Port for the site and API. Default `3100` |
 | `COOKIE_SECURE` | | Send cookies only over HTTPS. On by default in production |
 | `TRUST_PROXY` | | Number of reverse proxies in front of the app (usually `1`). Leave it unset without a proxy. See [deploy guide](docs/DEPLOY.md) |

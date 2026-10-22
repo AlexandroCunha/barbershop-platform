@@ -1,26 +1,27 @@
 import type { Request, Response } from "express";
+import { decoyPasswordHash, verifyPassword } from "../auth/passwords.js";
 import { PLATFORM_COOKIE, PLATFORM_COOKIE_PATH, SESSION_SECONDS } from "../auth/session-config.js";
-import { issueToken, readToken, stringsMatch } from "../auth/tokens.js";
+import { issueToken, readToken } from "../auth/tokens.js";
+import type { DeveloperRepository } from "../repositories/types.js";
 import type { AccountService } from "../services/account-service.js";
 import type { SessionService } from "../services/session-service.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
 import { buildCookie, parseCookies } from "../utils/cookies.js";
-import { parseLicense, parseNewTenant } from "../validations/accounts.js";
+import { parseLicense, parseLogin, parseNewTenant } from "../validations/accounts.js";
 import { tenantSummary } from "./summaries.js";
 
 interface PlatformControllerOptions {
-  /** The platform owner's token, compared with the one sent at sign-in. */
-  platformToken: string | undefined;
-  /** Key that signs platform sessions. Derived from the token, so changing the token ends them. */
-  platformKey: string | undefined;
+  developers: DeveloperRepository;
+  /** Key that signs platform sessions. Derived from the session secret, separate from the owner key. */
+  platformKey: string;
   accounts: AccountService;
   sessions: SessionService;
   secureCookies: boolean;
   clock: Clock;
 }
 
-/** The platform owner's view: every barbershop and its license. */
+/** The developer's view: every barbershop and its license. */
 export class PlatformController {
   private readonly options: PlatformControllerOptions;
 
@@ -29,17 +30,17 @@ export class PlatformController {
   }
 
   login = async (req: Request, res: Response): Promise<void> => {
-    const { platformToken, platformKey, secureCookies, sessions } = this.options;
-    if (platformToken === undefined || platformKey === undefined) {
-      throw new AppError(503, "The platform area is not available.");
+    const { developers, platformKey, secureCookies, sessions } = this.options;
+    const { email, password } = parseLogin(req.body);
+
+    const developer = await developers.findByEmail(email);
+    // The hash is checked even for an unknown email, so response time does not reveal who has an account.
+    const passwordMatches = await verifyPassword(password, developer?.passwordHash ?? (await decoyPasswordHash));
+    if (!developer || !passwordMatches) {
+      throw new AppError(401, "Email or password is not correct");
     }
 
-    const given = typeof req.body?.token === "string" ? req.body.token : "";
-    if (!stringsMatch(given, platformToken)) {
-      throw new AppError(401, "Invalid platform token");
-    }
-
-    const session = await sessions.openPlatformSession();
+    const session = await sessions.openPlatformSession(developer.id);
     const value = issueToken(platformKey, { kind: "platform", exp: session.expiresAt, sid: session.id });
     res.setHeader(
       "Set-Cookie",
@@ -51,11 +52,9 @@ export class PlatformController {
   /** Ends the platform session on the server, so a copy of the cookie stops working at once. */
   logout = async (req: Request, res: Response): Promise<void> => {
     const { platformKey, secureCookies, sessions, clock } = this.options;
-    if (platformKey !== undefined) {
-      const payload = readToken(platformKey, parseCookies(req.headers.cookie)[PLATFORM_COOKIE], clock.now().getTime());
-      if (payload?.sid) {
-        await sessions.revoke(payload.sid);
-      }
+    const payload = readToken(platformKey, parseCookies(req.headers.cookie)[PLATFORM_COOKIE], clock.now().getTime());
+    if (payload?.sid) {
+      await sessions.revoke(payload.sid);
     }
 
     res.setHeader(

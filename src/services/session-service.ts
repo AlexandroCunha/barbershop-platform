@@ -20,11 +20,11 @@ export class SessionService {
   ) {}
 
   openOwnerSession(owner: { tenantId: number; ownerId: number }): Promise<OpenedSession> {
-    return this.open({ kind: "owner", tenantId: owner.tenantId, ownerId: owner.ownerId });
+    return this.open({ kind: "owner", tenantId: owner.tenantId, ownerId: owner.ownerId, developerId: null });
   }
 
-  openPlatformSession(): Promise<OpenedSession> {
-    return this.open({ kind: "platform", tenantId: null, ownerId: null });
+  openPlatformSession(developerId: number): Promise<OpenedSession> {
+    return this.open({ kind: "platform", tenantId: null, ownerId: null, developerId });
   }
 
   /** The session when it is still active, otherwise null. */

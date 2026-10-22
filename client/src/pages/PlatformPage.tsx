@@ -26,7 +26,8 @@ export function PlatformPage() {
 }
 
 function PlatformLogin({ onSignedIn }: { onSignedIn: () => void }) {
-  const [token, setToken] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -35,11 +36,11 @@ function PlatformLogin({ onSignedIn }: { onSignedIn: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await platformApi.login(token.trim());
-      setToken("");
+      await platformApi.login(email.trim().toLowerCase(), password);
+      setPassword("");
       onSignedIn();
     } catch (caught) {
-      setError(caught instanceof ApiError && caught.status === 401 ? "That token is not correct." : errorText(caught));
+      setError(caught instanceof ApiError && caught.status === 401 ? "Email or password is not correct." : errorText(caught));
     } finally {
       setBusy(false);
     }
@@ -48,16 +49,25 @@ function PlatformLogin({ onSignedIn }: { onSignedIn: () => void }) {
   return (
     <div className="owner owner-login">
       <form className="login-card" onSubmit={handleSubmit} noValidate>
-        <p className="eyebrow">Platform</p>
+        <p className="eyebrow">Developer</p>
         <h1>Sign in</h1>
-        <p className="muted">Enter your platform access token.</p>
-        <Field label="Platform token" htmlFor="platform-token">
+        <p className="muted">Developer accounts only.</p>
+        <Field label="Email" htmlFor="developer-email">
           <input
-            id="platform-token"
+            id="developer-email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </Field>
+        <Field label="Password" htmlFor="developer-password">
+          <input
+            id="developer-password"
             type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
         </Field>
         {error && (

@@ -6,6 +6,7 @@ interface SessionRow {
   kind: SessionKind;
   tenant_id: number | null;
   owner_id: number | null;
+  developer_id: number | null;
   expires_at: Date;
 }
 
@@ -16,6 +17,7 @@ const toSession = (row: SessionRow): SessionRecord => ({
   kind: row.kind,
   tenantId: row.tenant_id,
   ownerId: row.owner_id,
+  developerId: row.developer_id,
   expiresAt: row.expires_at,
 });
 
@@ -26,8 +28,9 @@ export class PgSessionRepository implements SessionRepository {
     // Sessions that expired long ago are no longer needed; clearing them here keeps the table small.
     await this.db.query(`DELETE FROM sessions WHERE expires_at < now()`);
     await this.db.query(
-      `INSERT INTO sessions (id, kind, tenant_id, owner_id, expires_at) VALUES ($1, $2, $3, $4, $5)`,
-      [session.id, session.kind, session.tenantId, session.ownerId, session.expiresAt],
+      `INSERT INTO sessions (id, kind, tenant_id, owner_id, developer_id, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [session.id, session.kind, session.tenantId, session.ownerId, session.developerId, session.expiresAt],
     );
   }
 
@@ -36,7 +39,7 @@ export class PgSessionRepository implements SessionRepository {
     if (!UUID_PATTERN.test(id)) return null;
 
     const { rows } = await this.db.query<SessionRow>(
-      `SELECT id, kind, tenant_id, owner_id, expires_at FROM sessions
+      `SELECT id, kind, tenant_id, owner_id, developer_id, expires_at FROM sessions
        WHERE id = $1 AND revoked_at IS NULL AND expires_at > $2`,
       [id, now],
     );
