@@ -62,6 +62,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
   // Creating, replacing and removing a barber's login is an owner action.
   owner.put("/professionals/:id/login", deps.barber.setLogin);
   owner.delete("/professionals/:id/login", deps.barber.removeLogin);
+  owner.get("/professionals/:id/hours", deps.barber.ownerHours);
+  owner.put("/professionals/:id/hours", deps.barber.saveOwnerHours);
   shop.use("/owner", owner);
 
   // A barber's own area: sign-in, sign-out, and only their upcoming bookings.
@@ -71,6 +73,8 @@ export function createApiRouter(deps: ApiDependencies): Router {
   barber.use(deps.requireBarber);
   barber.get("/session", deps.barber.session);
   barber.get("/bookings", deps.barber.bookings);
+  barber.get("/hours", deps.barber.hours);
+  barber.put("/hours", deps.barber.saveHours);
   shop.use("/barber", barber);
 
   // The shop the home page opens. Not tied to a shop address.

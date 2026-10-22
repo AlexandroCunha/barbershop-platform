@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Field, Notice, errorText } from "../admin/ui";
 import { ApiError } from "../api";
+import { ScheduleEditor } from "../components/ScheduleEditor";
 import { formatDate } from "../format";
 import { useTenant } from "../tenant-context";
 import type { BarberBooking, BarberProfile } from "../types";
@@ -35,7 +36,10 @@ export function BarberPage() {
       {status.state === "signed-out" ? (
         <BarberSignIn onSignedIn={(professional) => setStatus({ state: "signed-in", professional })} />
       ) : (
-        <BarberAgenda professional={status.professional} onSignedOut={() => setStatus({ state: "signed-out" })} />
+        <>
+          <BarberAgenda professional={status.professional} onSignedOut={() => setStatus({ state: "signed-out" })} />
+          <ScheduleEditor professionalId={null} name={status.professional.name} />
+        </>
       )}
     </div>
   );

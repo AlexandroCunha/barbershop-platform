@@ -14,6 +14,7 @@ import { rateLimit } from "./middlewares/rate-limit.js";
 import { LocalMediaStorage } from "./media/local-media-storage.js";
 import { createS3MediaStorage } from "./media/s3-media-storage.js";
 import { PgBarberAccountRepository } from "./repositories/pg-barber-account-repository.js";
+import { PgBarberHoursRepository } from "./repositories/pg-barber-hours-repository.js";
 import { PgBookingRepository } from "./repositories/pg-booking-repository.js";
 import { PgRateLimitStore } from "./repositories/pg-rate-limit-store.js";
 import { PgOwnerRepository } from "./repositories/pg-owner-repository.js";
@@ -40,8 +41,9 @@ const services = new PgServiceRepository(pool);
 const professionals = new PgProfessionalRepository(pool);
 const bookings = new PgBookingRepository(pool);
 const barberAccounts = new PgBarberAccountRepository(pool);
+const barberHours = new PgBarberHoursRepository(pool);
 const sessions = new SessionService(new PgSessionRepository(pool), clock);
-const barbers = new BarberService(barberAccounts, professionals, services, bookings, sessions, clock);
+const barbers = new BarberService(barberAccounts, professionals, services, bookings, sessions, clock, barberHours);
 
 const accounts = new AccountService(tenants, owners, clock);
 const media = config.media.kind === "s3" ? createS3MediaStorage(config.media.settings) : new LocalMediaStorage(MEDIA_DIR);
@@ -51,7 +53,7 @@ const limits = new PgRateLimitStore(pool);
 const app = createApp(
   {
     tenants,
-    booking: new BookingController(new BookingService(services, professionals, bookings, clock)),
+    booking: new BookingController(new BookingService(services, professionals, bookings, clock, barberHours)),
     site: new SiteController({ tenants, homeShopSlug: config.homeShopSlug }),
     barber: new BarberController({
       barbers,

@@ -2,7 +2,7 @@
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/;
 
 /** Paths the application itself uses, so no shop can take them. */
-const RESERVED_SLUGS = new Set(["api", "admin", "platform", "media", "assets", "www", "login", "static"]);
+const RESERVED_SLUGS = new Set(["api", "admin", "acesso", "platform", "media", "assets", "www", "login", "static"]);
 
 export function isValidSlug(slug: string): boolean {
   return SLUG_PATTERN.test(slug) && !slug.includes("--") && !RESERVED_SLUGS.has(slug);

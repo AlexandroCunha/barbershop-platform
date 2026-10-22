@@ -1,9 +1,12 @@
 import { decoyPasswordHash, hashPassword, verifyPassword } from "../auth/passwords.js";
 import type { Tenant } from "../domain/tenant.js";
+import { barberWeekToApi, parseBarberWeek } from "../domain/barber-hours.js";
+import type { DayHours, Day } from "../domain/business.js";
 import { isUpcoming } from "../domain/upcoming-bookings.js";
 import type {
   BarberAccount,
   BarberAccountRepository,
+  BarberHoursRepository,
   BookingRepository,
   ProfessionalRepository,
   ServiceRepository,
@@ -12,6 +15,12 @@ import { AppError } from "../utils/app-error.js";
 import { minuteOfDayIn, type Clock } from "../utils/clock.js";
 import { minutesToTime } from "../utils/time.js";
 import type { SessionService } from "./session-service.js";
+
+/** A barber's working hours, in the shop's terms. custom is false while they follow the shop's hours. */
+export interface BarberHoursView {
+  custom: boolean;
+  days: Record<Day, DayHours | null>;
+}
 
 /** What a barber sees of one booking: when, what and for whom. No contact details. */
 export interface BarberBooking {
@@ -36,7 +45,29 @@ export class BarberService {
     private readonly bookings: BookingRepository,
     private readonly sessions: SessionService,
     private readonly clock: Clock,
+    private readonly hours: BarberHoursRepository,
   ) {}
+
+  /** A barber's hours. Without hours of their own, the shop's opening hours are shown. */
+  async getHours(tenant: Tenant, professionalId: number): Promise<BarberHoursView> {
+    await this.requireProfessional(tenant, professionalId);
+    const week = await this.hours.findByProfessional(tenant.id, professionalId);
+    return { custom: week !== null, days: barberWeekToApi(week, tenant.business.hours) };
+  }
+
+  /** Saves a barber's hours for every day. The barber and the owner both use this. */
+  async saveHours(tenant: Tenant, professionalId: number, input: unknown): Promise<BarberHoursView> {
+    await this.requireProfessional(tenant, professionalId);
+    const week = parseBarberWeek(input, tenant.business.hours);
+    await this.hours.replace(tenant.id, professionalId, week);
+    return { custom: true, days: barberWeekToApi(week, tenant.business.hours) };
+  }
+
+  private async requireProfessional(tenant: Tenant, professionalId: number): Promise<void> {
+    if (!(await this.professionals.findById(tenant.id, professionalId))) {
+      throw new AppError(404, "Professional not found");
+    }
+  }
 
   async signIn(tenant: Tenant, email: string, password: string): Promise<BarberAccount> {
     const account = await this.accounts.findByEmail(tenant.id, email);

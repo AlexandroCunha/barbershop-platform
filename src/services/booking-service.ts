@@ -1,8 +1,14 @@
 import { availableStartMinutes, type BusyPeriod } from "../domain/availability.js";
+import { barberWindow } from "../domain/barber-hours.js";
 import { allowsBookings, licenseInfo, type Tenant } from "../domain/tenant.js";
-import { openingHoursFor, type TimeWindow } from "../domain/opening-hours.js";
+import type { TimeWindow } from "../domain/opening-hours.js";
 import type { Booking, Professional, Service } from "../domain/types.js";
-import type { BookingRepository, ProfessionalRepository, ServiceRepository } from "../repositories/types.js";
+import type {
+  BarberHoursRepository,
+  BookingRepository,
+  ProfessionalRepository,
+  ServiceRepository,
+} from "../repositories/types.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
 import { minutesToTime } from "../utils/time.js";
@@ -21,6 +27,8 @@ export interface BookingRequest {
 /**
  * The booking rules for one barbershop at a time. Each call receives the shop
  * (tenant), so its hours, time zone and license are always the right ones.
+ * Each barber's own working hours apply to their chair; a barber without hours of
+ * their own follows the shop's opening hours.
  */
 export class BookingService {
   constructor(
@@ -28,6 +36,7 @@ export class BookingService {
     private readonly professionals: ProfessionalRepository,
     private readonly bookings: BookingRepository,
     private readonly clock: Clock,
+    private readonly hours: BarberHoursRepository,
   ) {}
 
   listServices(tenant: Tenant): Promise<Service[]> {
@@ -43,11 +52,11 @@ export class BookingService {
     const service = await this.requireService(tenant, serviceId);
     this.assertNotPast(tenant, date);
 
-    const window = openingHoursFor(tenant.business.hours, date);
     const busy = await this.busyByProfessional(tenant, date);
 
     const starts = new Set<number>();
     for (const professional of await this.candidates(tenant, professionalId)) {
+      const window = await this.windowFor(tenant, professional.id, date);
       for (const start of freeStarts(window, service, busy.get(professional.id))) {
         starts.add(start);
       }
@@ -61,10 +70,10 @@ export class BookingService {
     const service = await this.requireService(tenant, request.serviceId);
     this.assertNotPast(tenant, request.date);
 
-    const window = openingHoursFor(tenant.business.hours, request.date);
     const busy = await this.busyByProfessional(tenant, request.date);
 
     for (const professional of await this.candidates(tenant, request.professionalId)) {
+      const window = await this.windowFor(tenant, professional.id, request.date);
       const starts = freeStarts(window, service, busy.get(professional.id));
       if (!starts.includes(request.startMinute)) {
         continue;
@@ -110,6 +119,11 @@ export class BookingService {
       throw new AppError(404, "Professional not found");
     }
     return [professional];
+  }
+
+  /** The hours one barber takes bookings in on a date, or null on a day off. */
+  private async windowFor(tenant: Tenant, professionalId: number, isoDate: string): Promise<TimeWindow | null> {
+    return barberWindow(tenant.business.hours, await this.hours.findByProfessional(tenant.id, professionalId), isoDate);
   }
 
   /** Every booking on the date, grouped by barber. One query, however many barbers there are. */

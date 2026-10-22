@@ -132,6 +132,7 @@ function setup() {
     ]),
     bookings,
     clock,
+    { findByProfessional: async () => null, replace: async () => undefined },
   );
   return { service, bookings };
 }

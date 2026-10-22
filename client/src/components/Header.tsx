@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useBusiness } from "../tenant-context";
-import { OwnerMenu } from "./OwnerMenu";
+import { AccessButton } from "./AccessButton";
 
 export function Header() {
   const business = useBusiness();
@@ -34,7 +34,7 @@ export function Header() {
           Book appointment
         </a>
 
-        <OwnerMenu />
+        <AccessButton />
       </div>
     </header>
   );

@@ -134,7 +134,10 @@ function setup(bookingRows: Booking[] = []) {
     findFromDate: async (tenantId: number, professionalId: number, from: string) =>
       bookingRows.filter((row) => row.professionalId === professionalId && row.date >= from && tenantId === 1),
   } as unknown as BookingRepository;
-  const barbers = new BarberService(accounts, professionals, services, bookings, sessions, clock);
+  const barbers = new BarberService(accounts, professionals, services, bookings, sessions, clock, {
+    findByProfessional: async () => null,
+    replace: async () => undefined,
+  });
   return { accounts, sessionRows, sessions, barbers };
 }
 

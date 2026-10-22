@@ -84,6 +84,27 @@ export class BarberController {
     res.json(await this.barbers.upcomingBookings(tenantOf(req), barberOf(req)));
   };
 
+  /** A barber's own hours, read through their own area. */
+  hours = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.barbers.getHours(tenantOf(req), barberOf(req).professionalId));
+  };
+
+  /** A barber saves their own hours. */
+  saveHours = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.barbers.saveHours(tenantOf(req), barberOf(req).professionalId, req.body));
+  };
+
+  /** The owner reads a barber's hours. */
+  ownerHours = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.barbers.getHours(tenantOf(req), parseProfessionalId(String(req.params.id))));
+  };
+
+  /** The owner saves a barber's hours. */
+  saveOwnerHours = async (req: Request, res: Response): Promise<void> => {
+    const id = parseProfessionalId(String(req.params.id));
+    res.json(await this.barbers.saveHours(tenantOf(req), id, req.body));
+  };
+
   /** The owner creates or replaces a barber's login. */
   setLogin = async (req: Request, res: Response): Promise<void> => {
     const { email, password } = parseBarberCredentials(req.body);

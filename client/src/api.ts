@@ -1,8 +1,11 @@
 import type {
   Availability,
+  BarberHours,
   BookingInput,
   Business,
   Confirmation,
+  Day,
+  DayHours,
   MediaItem,
   OwnerSession,
   BarberBooking,
@@ -80,6 +83,11 @@ export function tenantApi(slug: string) {
       session: () => send<{ ok: boolean; professional: BarberProfile }>(`${base}/barber/session`),
 
       bookings: () => send<BarberBooking[]>(`${base}/barber/bookings`),
+
+      hours: () => send<BarberHours>(`${base}/barber/hours`),
+
+      saveHours: (days: Record<Day, DayHours | null>) =>
+        send<BarberHours>(`${base}/barber/hours`, json("PUT", days)),
     },
 
     owner: {
@@ -135,6 +143,13 @@ export function tenantApi(slug: string) {
 
       removeBarberLogin: (professionalId: number) =>
         ownerSend<unknown>(`${owner}/professionals/${professionalId}/login`, { method: "DELETE" }, "barber-login"),
+
+      /** A barber's working hours, as the owner sees them. */
+      barberHours: (professionalId: number) =>
+        ownerSend<BarberHours>(`${owner}/professionals/${professionalId}/hours`, undefined, "hours"),
+
+      saveBarberHours: (professionalId: number, days: Record<Day, DayHours | null>) =>
+        ownerSend<BarberHours>(`${owner}/professionals/${professionalId}/hours`, json("PUT", days), "hours"),
     },
   };
 }

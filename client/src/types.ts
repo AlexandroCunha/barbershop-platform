@@ -6,6 +6,12 @@ export interface DayHours {
   close: string;
 }
 
+/** A barber's hours. custom is false while they follow the shop's opening hours. */
+export interface BarberHours {
+  custom: boolean;
+  days: Record<Day, DayHours | null>;
+}
+
 export interface Business {
   name: string;
   tagline: string;

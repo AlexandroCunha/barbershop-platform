@@ -8,11 +8,11 @@
  * The server uses the same rules for the shop address; keep the two in step.
  */
 const SHOP_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,38}[a-z0-9]$/;
-const RESERVED = new Set(["api", "admin", "platform", "media", "assets", "www", "login", "static"]);
+const RESERVED = new Set(["api", "admin", "acesso", "platform", "media", "assets", "www", "login", "static"]);
 
 export type Route =
   | { kind: "landing" }
-  | { kind: "shop"; slug: string; view: "site" | "admin" | "barber" }
+  | { kind: "shop"; slug: string; view: "site" | "admin" | "barber" | "access" }
   | { kind: "not-found" };
 
 function isShopSlug(slug: string): boolean {
@@ -30,5 +30,6 @@ export function parseRoute(pathname: string): Route {
   if (section === undefined) return { kind: "shop", slug, view: "site" };
   if (section === "admin") return { kind: "shop", slug, view: "admin" };
   if (section === "barber") return { kind: "shop", slug, view: "barber" };
+  if (section === "acesso") return { kind: "shop", slug, view: "access" };
   return { kind: "not-found" };
 }

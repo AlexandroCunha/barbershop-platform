@@ -1660,47 +1660,53 @@ textarea {
   }
 }
 
-/* Owner menu: top-right of the site, holds the way into the site customisation. */
-.owner-menu {
-  position: relative;
+/* Access button: top-right of the site, leads to the access page. */
+.access-button {
   flex: none;
-}
-
-.owner-menu-toggle {
   padding: 0.45rem 0.9rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: transparent;
   color: var(--charcoal);
-  font: inherit;
   font-size: 0.85rem;
-  cursor: pointer;
+  text-decoration: none;
 }
 
-.owner-menu-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 30;
+.access-button:hover,
+.access-button:focus-visible {
+  background: var(--paper-tint);
+}
+
+/* Access page: the owner and barber entries. */
+.access-page {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+
+.access-choices {
   display: grid;
-  min-width: 200px;
-  padding: 0.5rem;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.access-choice {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.25rem 1.4rem;
   background: var(--paper-card);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(23, 23, 23, 0.12);
-}
-
-.owner-menu-panel a {
-  padding: 0.6rem 0.8rem;
-  border-radius: 10px;
+  border-radius: 16px;
   color: var(--charcoal);
   text-decoration: none;
 }
 
-.owner-menu-panel a:hover,
-.owner-menu-panel a:focus-visible {
-  background: var(--paper-tint);
+.access-choice:hover,
+.access-choice:focus-visible {
+  border-color: var(--copper);
+}
+
+.access-choice-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
 }
 
 /* Barber area: sign-in and the list of upcoming bookings. */
@@ -1728,4 +1734,33 @@ textarea {
   color: var(--copper-ink);
   font-size: 0.85rem;
   letter-spacing: 0.04em;
+}
+
+/* Working hours: one row per day, a checkbox for working that day and two selects for the window. */
+.schedule {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.schedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.schedule-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 9rem;
+}
+
+.schedule-times {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }

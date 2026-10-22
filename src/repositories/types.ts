@@ -1,6 +1,7 @@
 import type { Business } from "../domain/business.js";
 import type { Booking, NewBooking, Professional, ProfessionalPatch, Service, ServicePatch } from "../domain/types.js";
 import type { LicenseStatus, Tenant } from "../domain/tenant.js";
+import type { BarberWeek } from "../domain/barber-hours.js";
 
 /** A shop owner's login. The password is stored as a hash only. */
 export interface OwnerAccount {
@@ -137,6 +138,14 @@ export interface ProfessionalRepository {
   archive(tenantId: number, id: number): Promise<boolean>;
   create(tenantId: number, input: NewProfessional): Promise<Professional>;
   update(tenantId: number, id: number, patch: ProfessionalPatch): Promise<Professional | null>;
+}
+
+/** The working hours each barber has set for themselves. */
+export interface BarberHoursRepository {
+  /** The barber's own hours, or null when they follow the shop's hours. */
+  findByProfessional(tenantId: number, professionalId: number): Promise<BarberWeek | null>;
+  /** Replaces the barber's hours for every day of the week. */
+  replace(tenantId: number, professionalId: number, week: BarberWeek): Promise<void>;
 }
 
 export interface BookingRepository {
