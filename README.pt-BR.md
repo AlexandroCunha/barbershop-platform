@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/banner.pt-BR.svg" alt="Barbearia: agendamento online para barbearias, de forma simples" width="100%">
+<img src="docs/banner.pt-BR.svg" alt="Barbershop Platform: agendamento online para barbearias, de forma simples" width="100%">
 
 **Agendamento online para barbearias, de forma simples.** Cada barbearia ganha o próprio endereço, um site
 bonito, uma agenda de horários e uma área do dono. Uma única instalação atende muitas barbearias.

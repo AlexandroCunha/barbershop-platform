@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/banner.svg" alt="Barbearia: online booking for barbershops, made simple" width="100%">
+<img src="docs/banner.svg" alt="Barbershop Platform: online booking for barbershops, made simple" width="100%">
 
 **Online booking for barbershops, made simple.** Every shop gets its own address, a beautiful website,
 a booking calendar and an owner area. One installation serves many shops.

@@ -1,4 +1,4 @@
-# Deploying Barbearia
+# Deploying Barbershop Platform
 
 This guide covers production. One server runs fine on the defaults. To run several servers behind a load balancer, follow the [scaling](#scaling) section.
 
