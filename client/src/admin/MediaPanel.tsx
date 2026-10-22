@@ -13,6 +13,7 @@ export function MediaPanel() {
   const [items, setItems] = useState<MediaItem[] | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   useEffect(() => {
     api.owner
@@ -48,6 +49,22 @@ export function MediaPanel() {
     }
   }
 
+  async function handleRemove(name: string) {
+    if (!window.confirm(`Remove ${name}? This cannot be undone.`)) return;
+
+    setRemoving(name);
+    setResult(null);
+    try {
+      await api.owner.removeMedia(name);
+      setItems((current) => current?.filter((item) => item.name !== name) ?? null);
+      setResult({ kind: "ok", text: `Removed ${name}.` });
+    } catch (caught) {
+      setResult({ kind: "error", text: errorText(caught) });
+    } finally {
+      setRemoving(null);
+    }
+  }
+
   return (
     <div className="owner-stack">
       <section className="owner-card">
@@ -72,6 +89,14 @@ export function MediaPanel() {
               <li key={item.name}>
                 <img src={item.url} alt="" loading="lazy" />
                 <span className="media-name">{item.name}</span>
+                <button
+                  type="button"
+                  className="btn btn-ghost media-remove"
+                  disabled={removing !== null}
+                  onClick={() => handleRemove(item.name)}
+                >
+                  {removing === item.name ? "Removing…" : "Remove"}
+                </button>
               </li>
             ))}
           </ul>

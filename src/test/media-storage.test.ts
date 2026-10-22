@@ -48,6 +48,10 @@ class MemoryMedia implements MediaStorage {
     return null;
   }
 
+  async delete(shop: string, name: string): Promise<void> {
+    this.files.delete(`${shop}/${name}`);
+  }
+
   async rename(from: string, to: string): Promise<void> {
     for (const key of [...this.files.keys()]) {
       if (key.startsWith(`${from}/`)) {

@@ -4,6 +4,7 @@ import { nextAddressChange } from "../domain/address.js";
 import { isValidSlug } from "../domain/slug.js";
 import type { Tenant } from "../domain/tenant.js";
 import type { MediaStorage } from "../media/media-storage.js";
+import { hasMediaExtension, isMediaFileName } from "../domain/media-name.js";
 import { savePhoto } from "../media/photo-upload.js";
 import type {
   NewProfessional,
@@ -70,6 +71,27 @@ export class AdminService {
 
   uploadMedia(tenant: Tenant, originalName: string, contentType: string, data: Buffer): Promise<string> {
     return savePhoto(this.media, tenant.slug, originalName, contentType, data);
+  }
+
+  /**
+   * Removes one photo. A photo that is still the site's cover or a barber's portrait stays until the
+   * owner chooses another for it, so no page is left with a broken picture.
+   */
+  async removeMedia(tenant: Tenant, name: string): Promise<void> {
+    const exists = isMediaFileName(name) && hasMediaExtension(name) && (await this.media.list(tenant.slug)).includes(name);
+    if (!exists) {
+      throw new AppError(404, "Photo not found");
+    }
+
+    if (tenant.business.heroImage === name) {
+      throw new AppError(409, "This photo is the site's cover. Choose another cover before removing it.");
+    }
+    const portrait = (await this.professionals.findAll(tenant.id)).find((person) => person.photo === name);
+    if (portrait) {
+      throw new AppError(409, `This photo is ${portrait.name}'s portrait. Choose another portrait before removing it.`);
+    }
+
+    await this.media.delete(tenant.slug, name);
   }
 
   createService(tenant: Tenant, input: NewService): Promise<Service> {

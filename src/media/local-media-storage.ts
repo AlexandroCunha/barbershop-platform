@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { mkdir, readdir, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { hasMediaExtension, isMediaFileName } from "../domain/media-name.js";
 import type { MediaStorage, StoredPhoto } from "./media-storage.js";
@@ -52,6 +52,14 @@ export class LocalMediaStorage implements MediaStorage {
       await rename(this.dirOf(from), target);
     } catch (error) {
       // A shop that has never had a photo has no folder yet, so there is nothing to move.
+      if (!isErrorCode(error, "ENOENT")) throw error;
+    }
+  }
+
+  async delete(shop: string, name: string): Promise<void> {
+    try {
+      await unlink(path.join(this.dirOf(shop), name));
+    } catch (error) {
       if (!isErrorCode(error, "ENOENT")) throw error;
     }
   }

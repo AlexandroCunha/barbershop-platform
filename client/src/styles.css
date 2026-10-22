@@ -1811,3 +1811,7 @@ textarea {
   margin: 0;
   font-size: 1rem;
 }
+
+.media-remove {
+  margin-top: 0.4rem;
+}

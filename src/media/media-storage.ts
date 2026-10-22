@@ -10,6 +10,8 @@ export interface MediaStorage {
   get(shop: string, name: string): Promise<StoredPhoto | null>;
   /** Moves every photo of one shop to another shop name. Nothing is moved if the target name is taken. */
   rename(from: string, to: string): Promise<void>;
+  /** Removes one photo. Removing a photo that is already gone does nothing. */
+  delete(shop: string, name: string): Promise<void>;
 }
 
 export interface StoredPhoto {

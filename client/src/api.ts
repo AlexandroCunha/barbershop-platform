@@ -111,6 +111,10 @@ export function tenantApi(slug: string) {
       /** The shop's upcoming bookings across every barber, earliest first. */
       bookings: () => ownerSend<OwnerBooking[]>(`${owner}/bookings`, undefined, "bookings"),
 
+      /** Removes one photo. The server refuses it while it is the site's cover or a barber's portrait. */
+      removeMedia: (name: string) =>
+        ownerSend<unknown>(`${owner}/media/${encodeURIComponent(name)}`, { method: "DELETE" }, "media"),
+
       listMedia: () => ownerSend<MediaItem[]>(`${owner}/media`, undefined, "media"),
 
       uploadMedia: (file: File) =>

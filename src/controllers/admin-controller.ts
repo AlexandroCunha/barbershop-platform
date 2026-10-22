@@ -49,6 +49,11 @@ export class AdminController {
     res.status(201).json({ name, url: mediaUrl(tenant.slug, name) });
   };
 
+  removeMedia = async (req: Request, res: Response): Promise<void> => {
+    await this.service.removeMedia(tenantOf(req), String(req.params.name));
+    res.status(204).end();
+  };
+
   createService = async (req: Request, res: Response): Promise<void> => {
     res.status(201).json(await this.service.createService(tenantOf(req), parseNewService(req.body)));
   };

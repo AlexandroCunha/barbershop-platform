@@ -95,6 +95,10 @@ export class S3MediaStorage implements MediaStorage {
     }
   }
 
+  async delete(shop: string, name: string): Promise<void> {
+    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: keyOf(shop, name) }));
+  }
+
   async get(shop: string, name: string): Promise<StoredPhoto | null> {
     const contentType = contentTypeOf(name);
     if (!isMediaFileName(name) || !hasMediaExtension(name) || !contentType) return null;
