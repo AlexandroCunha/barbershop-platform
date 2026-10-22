@@ -49,6 +49,11 @@ export class PgTenantRepository implements TenantRepository {
     return rows.map(toTenant);
   }
 
+  async findFirstSlug(): Promise<string | null> {
+    const { rows } = await this.db.query<{ slug: string }>(`SELECT slug FROM tenants ORDER BY id LIMIT 1`);
+    return rows[0]?.slug ?? null;
+  }
+
   async create(input: NewTenant): Promise<Tenant> {
     const client = await this.db.connect();
     try {

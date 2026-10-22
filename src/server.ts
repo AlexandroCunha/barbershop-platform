@@ -55,7 +55,7 @@ const app = createApp(
   {
     tenants,
     booking: new BookingController(new BookingService(services, professionals, bookings, clock)),
-    site: new SiteController(),
+    site: new SiteController({ tenants, homeShopSlug: config.homeShopSlug }),
     admin: new AdminController(new AdminService(tenants, media, services, professionals)),
     owner: new OwnerController({
       accounts,

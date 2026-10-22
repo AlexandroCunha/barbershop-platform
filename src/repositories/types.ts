@@ -33,6 +33,8 @@ export interface TenantRepository {
   findBySlug(slug: string): Promise<Tenant | null>;
   findById(id: number): Promise<Tenant | null>;
   listAll(): Promise<Tenant[]>;
+  /** The address of the barbershop created first, or null when there is none yet. */
+  findFirstSlug(): Promise<string | null>;
   /** Creates the shop, its owner and its starting services and barbers in one transaction. */
   create(input: NewTenant): Promise<Tenant>;
   updateBusiness(id: number, business: Business): Promise<void>;

@@ -1,6 +1,6 @@
 /**
  * Works out which screen the address points to:
- *   /                 landing page
+ *   /                 the home shop's booking page (or a notice when there is none)
  *   /platform         platform owner
  *   /:slug            a barbershop's website
  *   /:slug/admin      that barbershop's owner area

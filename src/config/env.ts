@@ -1,3 +1,4 @@
+import { isValidSlug } from "../domain/slug.js";
 import type { S3Settings } from "../media/s3-media-storage.js";
 
 /** Shortest accepted values, so the secrets cannot be guessed easily. */
@@ -20,6 +21,8 @@ export interface Config {
   trustProxyHops: number;
   /** Booking requests allowed per address in 10 minutes. Raise it for load tests only. */
   bookingRateLimit: number;
+  /** Address of the barbershop the home page opens. Undefined means the first shop created. */
+  homeShopSlug: string | undefined;
   media: MediaConfig;
 }
 
@@ -86,6 +89,16 @@ function parseTrustProxyHops(value: string | undefined): number {
 
 const isTrue = (value: string | undefined): boolean => value?.toLowerCase() === "true";
 
+function parseHomeShop(value: string | undefined): string | undefined {
+  const slug = value?.trim().toLowerCase();
+  if (!slug) return undefined;
+  if (!isValidSlug(slug)) {
+    throw new Error("HOME_SHOP_SLUG must be a valid barbershop address, such as northgate");
+  }
+  return slug;
+}
+
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const databaseUrl = env.DATABASE_URL;
   if (!databaseUrl) {
@@ -117,6 +130,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     secureCookies: env.COOKIE_SECURE === undefined ? production : isTrue(env.COOKIE_SECURE),
     trustProxyHops: parseTrustProxyHops(env.TRUST_PROXY),
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
+    homeShopSlug: parseHomeShop(env.HOME_SHOP_SLUG),
     media: parseMedia(env),
   };
 }

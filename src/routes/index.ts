@@ -60,6 +60,9 @@ export function createApiRouter(deps: ApiDependencies): Router {
   owner.patch("/professionals/:id", deps.admin.updateProfessional);
   shop.use("/owner", owner);
 
+  // The shop the home page opens. Not tied to a shop address.
+  router.get("/home", deps.site.home);
+
   router.use("/t/:slug", shop);
 
   // Platform owner.

@@ -1,5 +1,6 @@
+import { HomePage } from "./pages/HomePage";
 import { PlatformPage } from "./pages/PlatformPage";
-import { Landing, NotFound } from "./pages/Static";
+import { NotFound } from "./pages/Static";
 import { TenantPage } from "./pages/TenantPage";
 import { parseRoute } from "./router";
 
@@ -8,7 +9,7 @@ export default function App() {
 
   switch (route.kind) {
     case "landing":
-      return <Landing />;
+      return <HomePage />;
     case "platform":
       return <PlatformPage />;
     case "shop":

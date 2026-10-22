@@ -1660,40 +1660,77 @@ textarea {
   }
 }
 
-/* Landing page: open a barbershop by its address. */
-.landing-open {
-  margin: 2rem 0 1.5rem;
-}
-
-.landing-open label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.landing-open-row {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.landing-open-row input {
-  flex: 1 1 14rem;
-  min-width: 0;
-  padding: 0.7rem 0.9rem;
+/* Access menu: a quiet entry in the footer that opens a side panel. */
+.access-toggle {
+  margin-left: auto;
+  padding: 0.35rem 0.8rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: var(--paper-card);
-  color: var(--charcoal);
+  background: transparent;
+  color: var(--muted);
   font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
-.landing-open-row button {
-  padding: 0.7rem 1.3rem;
-  border: 1px solid var(--charcoal);
-  border-radius: 999px;
-  background: var(--charcoal);
-  color: var(--paper);
-  font: inherit;
+.access-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 23, 23, 0.35);
+  z-index: 40;
+}
+
+.access-panel {
+  color: var(--charcoal);
+  font-family: var(--font-sans);
+  opacity: 1;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 85vw);
+  padding: 1.25rem 1.5rem;
+  background: var(--paper-card);
+  border-left: 1px solid var(--line);
+  box-shadow: -12px 0 32px rgba(23, 23, 23, 0.12);
+  z-index: 41;
+  overflow-y: auto;
+}
+
+.access-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.access-head p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+}
+
+.access-close {
+  border: 0;
+  background: transparent;
+  color: var(--charcoal);
+  font-size: 1.6rem;
+  line-height: 1;
   cursor: pointer;
+}
+
+.access-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.access-links a {
+  display: block;
+  opacity: 1;
+  color: var(--charcoal);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--line);
 }
