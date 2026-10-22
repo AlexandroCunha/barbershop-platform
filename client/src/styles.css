@@ -1659,3 +1659,41 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* Landing page: open a barbershop by its address. */
+.landing-open {
+  margin: 2rem 0 1.5rem;
+}
+
+.landing-open label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.landing-open-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.landing-open-row input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--paper-card);
+  color: var(--charcoal);
+  font: inherit;
+}
+
+.landing-open-row button {
+  padding: 0.7rem 1.3rem;
+  border: 1px solid var(--charcoal);
+  border-radius: 999px;
+  background: var(--charcoal);
+  color: var(--paper);
+  font: inherit;
+  cursor: pointer;
+}
