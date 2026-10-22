@@ -153,5 +153,7 @@ export interface BookingRepository {
   findByDate(tenantId: number, isoDate: string): Promise<Booking[]>;
   /** One barber's bookings on or after a date, in order. */
   findFromDate(tenantId: number, professionalId: number, fromIsoDate: string): Promise<Booking[]>;
+  /** The shop's bookings on or after a date, across all barbers, earliest first, at most limit. */
+  findUpcoming(tenantId: number, fromIsoDate: string, limit: number): Promise<Booking[]>;
   create(tenantId: number, booking: NewBooking): Promise<Booking>;
 }

@@ -6,6 +6,19 @@ export interface DayHours {
   close: string;
 }
 
+/** One upcoming booking as the owner sees it, with the customer's contact details. */
+export interface OwnerBooking {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  serviceName: string;
+  professionalName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
 /** A barber's hours. custom is false while they follow the shop's opening hours. */
 export interface BarberHours {
   custom: boolean;

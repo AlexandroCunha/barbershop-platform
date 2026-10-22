@@ -1764,3 +1764,41 @@ textarea {
   align-items: center;
   gap: 0.5rem;
 }
+
+/* Owner's bookings list: one row per booking, with the time, the booking and the customer's contact details. */
+.owner-bookings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.owner-booking {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.25rem 1rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.owner-booking-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.owner-booking-contact {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 560px) {
+  .owner-booking {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-booking-contact {
+    grid-column: 1;
+  }
+}

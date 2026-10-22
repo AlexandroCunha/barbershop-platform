@@ -33,6 +33,11 @@ export class BookingController {
     res.json({ date, times });
   };
 
+  /** Reached only through the owner's session. Includes the customers' contact details. */
+  ownerBookings = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.service.upcomingForOwner(tenantOf(req)));
+  };
+
   book = async (req: Request, res: Response): Promise<void> => {
     const booking = await this.service.book(tenantOf(req), parseBookingRequest(req.body));
     res.status(201).json(toBookingResponse(booking));

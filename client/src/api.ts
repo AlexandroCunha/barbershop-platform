@@ -7,6 +7,7 @@ import type {
   Day,
   DayHours,
   MediaItem,
+  OwnerBooking,
   OwnerSession,
   BarberBooking,
   BarberProfile,
@@ -106,6 +107,9 @@ export function tenantApi(slug: string) {
 
       /** Moves the shop to a new address. Returns the address it now has. */
       changeAddress: (slug: string) => ownerSend<{ slug: string }>(`${owner}/address`, json("PUT", { slug }), "address"),
+
+      /** The shop's upcoming bookings across every barber, earliest first. */
+      bookings: () => ownerSend<OwnerBooking[]>(`${owner}/bookings`, undefined, "bookings"),
 
       listMedia: () => ownerSend<MediaItem[]>(`${owner}/media`, undefined, "media"),
 

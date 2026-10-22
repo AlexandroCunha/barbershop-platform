@@ -3,6 +3,7 @@ import { ApiError, OWNER_SESSION_EXPIRED, type TenantApi } from "../api";
 import { useTenant } from "../tenant-context";
 import type { LicenseSummary } from "../types";
 import { AccountPanel } from "./AccountPanel";
+import { BookingsPanel } from "./BookingsPanel";
 import { BusinessPanel } from "./BusinessPanel";
 import { MediaPanel } from "./MediaPanel";
 import { ServicesPanel } from "./ServicesPanel";
@@ -10,10 +11,11 @@ import { TeamPanel } from "./TeamPanel";
 import { Field, errorText } from "./ui";
 import { formatDate } from "../format";
 
-type Tab = "business" | "media" | "team" | "services" | "account";
+type Tab = "bookings" | "business" | "media" | "team" | "services" | "account";
 type Status = "checking" | "signed-out" | "signed-in";
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: "bookings", label: "Bookings" },
   { id: "business", label: "Business" },
   { id: "media", label: "Photos" },
   { id: "team", label: "Barbers" },
@@ -98,6 +100,7 @@ export function AdminPage() {
 
       <main className="container owner-main">
         {license && <LicenseNotice license={license} />}
+        {tab === "bookings" && <BookingsPanel />}
         {tab === "business" && <BusinessPanel />}
         {tab === "media" && <MediaPanel />}
         {tab === "team" && <TeamPanel />}

@@ -99,6 +99,13 @@ class InMemoryBookings implements BookingRepository {
     );
   }
 
+  async findUpcoming(tenantId: number, fromIsoDate: string, limit: number): Promise<Booking[]> {
+    return this.items
+      .filter((item) => item.tenantId === tenantId && item.date >= fromIsoDate)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute)
+      .slice(0, limit);
+  }
+
   async create(tenantId: number, booking: NewBooking): Promise<Booking> {
     const clash = this.items.some(
       (existing) =>
@@ -244,4 +251,26 @@ test("a shop whose trial has ended cannot take bookings", async () => {
   const expired: Tenant = { ...shop, licenseStatus: "trial", trialEndsAt: new Date("2029-12-01T00:00:00Z") };
 
   await assert.rejects(service.availability(expired, classicHaircut.id, MONDAY), assertAppError(403));
+});
+
+test("the owner's list shows this shop's upcoming bookings with the barber's name and contact details", async () => {
+  const { service } = setup();
+  await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 10 * 60, ...customer });
+  await service.book(otherShop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 10 * 60, ...customer });
+
+  const list = await service.upcomingForOwner(shop);
+
+  assert.equal(list.length, 1, "the other shop's booking is not listed");
+  const { id, ...row } = list[0]!;
+  assert.ok(id, "the row carries the booking id");
+  assert.deepEqual(row, {
+    date: MONDAY,
+    startTime: "10:00",
+    endTime: "10:30",
+    serviceName: "Classic haircut",
+    professionalName: "Daniel",
+    customerName: customer.customerName,
+    customerEmail: customer.customerEmail,
+    customerPhone: customer.customerPhone,
+  });
 });

@@ -9,9 +9,26 @@ import type {
   ProfessionalRepository,
   ServiceRepository,
 } from "../repositories/types.js";
+import { isUpcoming } from "../domain/upcoming-bookings.js";
 import { AppError } from "../utils/app-error.js";
-import type { Clock } from "../utils/clock.js";
+import { minuteOfDayIn, type Clock } from "../utils/clock.js";
 import { minutesToTime } from "../utils/time.js";
+
+/** One booking as the owner's list shows it, with the barber's name and the customer's contact details. */
+export interface OwnerBooking {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  serviceName: string;
+  professionalName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+}
+
+/** The owner's list shows this many upcoming bookings at most. */
+const OWNER_LIST_LIMIT = 200;
 
 export interface BookingRequest {
   serviceId: number;
@@ -63,6 +80,35 @@ export class BookingService {
     }
 
     return [...starts].sort((a, b) => a - b).map(minutesToTime);
+  }
+
+  /** The shop's upcoming bookings across every barber, for the owner's list. */
+  async upcomingForOwner(tenant: Tenant): Promise<OwnerBooking[]> {
+    const zone = tenant.business.timeZone;
+    const today = this.clock.today(zone);
+    const minuteNow = minuteOfDayIn(this.clock.now(), zone);
+
+    const [bookings, services, professionals] = await Promise.all([
+      this.bookings.findUpcoming(tenant.id, today, OWNER_LIST_LIMIT),
+      this.services.findAll(tenant.id),
+      this.professionals.findAll(tenant.id),
+    ]);
+    const serviceNames = new Map(services.map((service) => [service.id, service.name]));
+    const barberNames = new Map(professionals.map((professional) => [professional.id, professional.name]));
+
+    return bookings
+      .filter((booking) => isUpcoming(booking, today, minuteNow))
+      .map((booking) => ({
+        id: booking.id,
+        date: booking.date,
+        startTime: minutesToTime(booking.startMinute),
+        endTime: minutesToTime(booking.endMinute),
+        serviceName: serviceNames.get(booking.serviceId) ?? "Service",
+        professionalName: barberNames.get(booking.professionalId) ?? "Barber",
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        customerPhone: booking.customerPhone,
+      }));
   }
 
   async book(tenant: Tenant, request: BookingRequest): Promise<Booking> {
