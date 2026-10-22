@@ -76,12 +76,15 @@ export interface BarberProfile {
 
 export interface Availability {
   date: string;
+  /** Every time offered on the date, across the barbers. */
   times: string[];
+  /** Each barber's own free times, so the customer can choose a barber for a time. */
+  barbers: { professionalId: number; times: string[] }[];
 }
 
 export interface BookingInput {
   serviceId: number;
-  professionalId?: number;
+  professionalId: number;
   date: string;
   time: string;
   customerName: string;

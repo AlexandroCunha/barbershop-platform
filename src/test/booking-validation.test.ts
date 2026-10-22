@@ -4,6 +4,7 @@ import { parseBookingRequest } from "../validations/booking.js";
 
 const validBody = {
   serviceId: 1,
+  professionalId: 1,
   date: "2030-01-07",
   time: "09:30",
   customerName: "Ada Lovelace",
@@ -15,6 +16,11 @@ test("accepts a booking with a mobile phone and converts the time", () => {
   const request = parseBookingRequest(validBody);
   assert.equal(request.customerPhone, "+353 85 123 4567");
   assert.equal(request.startMinute, 9 * 60 + 30);
+});
+
+test("a booking must name its barber", () => {
+  assert.throws(() => parseBookingRequest({ ...validBody, professionalId: undefined }), /Choose a barber/);
+  assert.throws(() => parseBookingRequest({ ...validBody, professionalId: "" }), /Choose a barber/);
 });
 
 test("rejects a missing or malformed mobile phone", () => {

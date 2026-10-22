@@ -125,6 +125,12 @@ class InMemoryBookings implements BookingRepository {
 
 const clock: Clock = { now: () => NOW, today: () => TODAY };
 
+/** The start times offered on a date, across the barbers who can take the booking. */
+async function offered(service: BookingService, date: string, professionalId?: number): Promise<string[]> {
+  const barbers = await service.availability(shop, classicHaircut.id, date, professionalId);
+  return barbers.flatMap((barber) => barber.times);
+}
+
 function setup() {
   const bookings = new InMemoryBookings();
   const service = new BookingService(
@@ -157,7 +163,7 @@ function assertAppError(status: number) {
 test("lists availability on an open day, within opening hours", async () => {
   const { service } = setup();
 
-  const times = await service.availability(shop, classicHaircut.id, MONDAY);
+  const times = await offered(service, MONDAY);
 
   assert.equal(times[0], "09:00");
   assert.equal(times.at(-1), "18:30"); // 18:30 + 30 min closes at 19:00
@@ -165,14 +171,15 @@ test("lists availability on an open day, within opening hours", async () => {
 
 test("returns no times on a closed day", async () => {
   const { service } = setup();
-  assert.deepEqual(await service.availability(shop, classicHaircut.id, SUNDAY), []);
+  assert.deepEqual(await offered(service, SUNDAY), []);
 });
 
-test("books a free slot, assigns a barber and stores the end time", async () => {
+test("books a free slot with the chosen barber and stores the end time", async () => {
   const { service, bookings } = setup();
 
   const booking = await service.book(shop, {
     serviceId: classicHaircut.id,
+    professionalId: daniel.id,
     date: MONDAY,
     startMinute: 9 * 60,
     ...customer,
@@ -183,26 +190,39 @@ test("books a free slot, assigns a barber and stores the end time", async () => 
   assert.equal(bookings.items.length, 1);
 });
 
-test("a second customer at the same time is assigned to another barber", async () => {
+test("the same time can be booked with each barber, but not twice with one", async () => {
   const { service } = setup();
   const request = { serviceId: classicHaircut.id, date: MONDAY, startMinute: 9 * 60, ...customer };
 
-  const first = await service.book(shop, request);
-  const second = await service.book(shop, request);
+  const first = await service.book(shop, { ...request, professionalId: daniel.id });
+  const second = await service.book(shop, { ...request, professionalId: luca.id });
 
   assert.equal(first.professionalId, daniel.id);
   assert.equal(second.professionalId, luca.id);
+  await assert.rejects(service.book(shop, { ...request, professionalId: daniel.id }), assertAppError(409));
+});
+
+test("availability lists each barber's own free times", async () => {
+  const { service } = setup();
+  const request = { serviceId: classicHaircut.id, date: MONDAY, startMinute: 9 * 60, ...customer };
+  await service.book(shop, { ...request, professionalId: daniel.id });
+
+  const barbers = await service.availability(shop, classicHaircut.id, MONDAY);
+  const freeAt = (professionalId: number) => barbers.find((barber) => barber.professionalId === professionalId)?.times ?? [];
+
+  assert.equal(freeAt(daniel.id).includes("09:00"), false);
+  assert.equal(freeAt(luca.id).includes("09:00"), true);
 });
 
 test("a time stays offered until every barber is busy at that time", async () => {
   const { service } = setup();
   const request = { serviceId: classicHaircut.id, date: MONDAY, startMinute: 9 * 60, ...customer };
 
-  await service.book(shop, request);
-  assert.ok((await service.availability(shop, classicHaircut.id, MONDAY)).includes("09:00"));
+  await service.book(shop, { ...request, professionalId: daniel.id });
+  assert.ok((await offered(service, MONDAY)).includes("09:00"));
 
-  await service.book(shop, request);
-  assert.equal((await service.availability(shop, classicHaircut.id, MONDAY)).includes("09:00"), false);
+  await service.book(shop, { ...request, professionalId: luca.id });
+  assert.equal((await offered(service, MONDAY)).includes("09:00"), false);
 });
 
 test("a chosen barber is booked even when another barber is free", async () => {
@@ -228,19 +248,19 @@ test("a barbershop's bookings do not block another barbershop", async () => {
 
 test("rejects dates in the past", async () => {
   const { service } = setup();
-  await assert.rejects(service.availability(shop, classicHaircut.id, "2029-12-31"), assertAppError(400));
+  await assert.rejects(offered(service, "2029-12-31"), assertAppError(400));
 });
 
 test("returns 404 for an unknown service or professional", async () => {
   const { service } = setup();
   await assert.rejects(service.availability(shop, 999, MONDAY), assertAppError(404));
-  await assert.rejects(service.availability(shop, classicHaircut.id, MONDAY, 999), assertAppError(404));
+  await assert.rejects(offered(service, MONDAY, 999), assertAppError(404));
 });
 
 test("a suspended barbershop cannot take bookings", async () => {
   const { service } = setup();
   const suspended: Tenant = { ...shop, licenseStatus: "suspended" };
-  const request = { serviceId: classicHaircut.id, date: MONDAY, startMinute: 9 * 60, ...customer };
+  const request = { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer };
 
   await assert.rejects(service.availability(suspended, classicHaircut.id, MONDAY), assertAppError(403));
   await assert.rejects(service.book(suspended, request), assertAppError(403));

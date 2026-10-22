@@ -85,6 +85,7 @@ export function SitePage() {
           serviceId={serviceId}
           professionalId={professionalId}
           onServiceChange={setServiceId}
+          onProfessionalChange={setProfessionalId}
         />
 
         <Visit />

@@ -27,10 +27,12 @@ export class BookingController {
     res.json(await this.service.listProfessionals(tenantOf(req)));
   };
 
+  /** The times offered on the date, and each barber's own free times, so the customer can choose a barber. */
   availability = async (req: Request, res: Response): Promise<void> => {
     const { serviceId, professionalId, date } = parseAvailabilityQuery(req.query);
-    const times = await this.service.availability(tenantOf(req), serviceId, date, professionalId);
-    res.json({ date, times });
+    const barbers = await this.service.availability(tenantOf(req), serviceId, date, professionalId);
+    const times = [...new Set(barbers.flatMap((barber) => barber.times))].sort();
+    res.json({ date, times, barbers });
   };
 
   /** Reached only through the owner's session. Includes the customers' contact details. */

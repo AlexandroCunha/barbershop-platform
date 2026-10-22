@@ -31,10 +31,16 @@ export interface OwnerBooking {
 /** The owner's list shows this many upcoming bookings at most. */
 const OWNER_LIST_LIMIT = 200;
 
+/** The start times one barber has free for a service on a date. */
+export interface BarberTimes {
+  professionalId: number;
+  times: string[];
+}
+
 export interface BookingRequest {
   serviceId: number;
-  /** Optional: when omitted, any free barber may take the booking. */
-  professionalId?: number;
+  /** The customer chooses the barber, either before the time or after it. */
+  professionalId: number;
   date: string;
   startMinute: number;
   customerName: string;
@@ -65,22 +71,21 @@ export class BookingService {
     return this.professionals.findAll(tenant.id);
   }
 
-  async availability(tenant: Tenant, serviceId: number, date: string, professionalId?: number): Promise<string[]> {
+  /** Each candidate barber's free start times on the date. One barber when the customer has chosen. */
+  async availability(tenant: Tenant, serviceId: number, date: string, professionalId?: number): Promise<BarberTimes[]> {
     this.requireBookingsOpen(tenant);
     const service = await this.requireService(tenant, serviceId);
     this.assertNotPast(tenant, date);
 
     const busy = await this.busyByProfessional(tenant, date);
 
-    const starts = new Set<number>();
+    const barbers: BarberTimes[] = [];
     for (const professional of await this.candidates(tenant, professionalId)) {
       const window = await this.windowFor(tenant, professional.id, date);
-      for (const start of freeStarts(window, service, busy.get(professional.id))) {
-        starts.add(start);
-      }
+      const starts = freeStarts(window, service, busy.get(professional.id));
+      barbers.push({ professionalId: professional.id, times: starts.map(minutesToTime) });
     }
-
-    return [...starts].sort((a, b) => a - b).map(minutesToTime);
+    return barbers;
   }
 
   /** The shop's upcoming bookings across every barber, for the owner's list. */
@@ -118,36 +123,24 @@ export class BookingService {
     const service = await this.requireService(tenant, request.serviceId);
     this.assertNotPast(tenant, request.date);
 
+    const professional = await this.requireProfessional(tenant, request.professionalId);
+    const window = await this.windowFor(tenant, professional.id, request.date);
     const busy = await this.busyByProfessional(tenant, request.date);
-
-    for (const professional of await this.candidates(tenant, request.professionalId)) {
-      const window = await this.windowFor(tenant, professional.id, request.date);
-      const starts = freeStarts(window, service, busy.get(professional.id));
-      if (!starts.includes(request.startMinute)) {
-        continue;
-      }
-
-      try {
-        return await this.bookings.create(tenant.id, {
-          serviceId: service.id,
-          professionalId: professional.id,
-          date: request.date,
-          startMinute: request.startMinute,
-          endMinute: request.startMinute + service.durationMinutes,
-          customerName: request.customerName,
-          customerEmail: request.customerEmail,
-          customerPhone: request.customerPhone,
-        });
-      } catch (error) {
-        // Lost a race for this chair. Try the next candidate, if any.
-        if (error instanceof AppError && error.status === 409) {
-          continue;
-        }
-        throw error;
-      }
+    if (!freeStarts(window, service, busy.get(professional.id)).includes(request.startMinute)) {
+      throw new AppError(409, "That time is no longer available");
     }
 
-    throw new AppError(409, "That time is no longer available");
+    // Two customers can still race for the same chair; the database's no-overlap rule refuses the second.
+    return this.bookings.create(tenant.id, {
+      serviceId: service.id,
+      professionalId: professional.id,
+      date: request.date,
+      startMinute: request.startMinute,
+      endMinute: request.startMinute + service.durationMinutes,
+      customerName: request.customerName,
+      customerEmail: request.customerEmail,
+      customerPhone: request.customerPhone,
+    });
   }
 
   private requireBookingsOpen(tenant: Tenant): void {
@@ -157,16 +150,20 @@ export class BookingService {
     }
   }
 
-  /** The chosen barber only, or every barber when no preference was given. */
+  /** The chosen barber only, or every barber when none has been chosen yet. */
   private async candidates(tenant: Tenant, professionalId?: number): Promise<Professional[]> {
     if (professionalId === undefined) {
       return this.professionals.findAll(tenant.id);
     }
-    const professional = await this.professionals.findById(tenant.id, professionalId);
+    return [await this.requireProfessional(tenant, professionalId)];
+  }
+
+  private async requireProfessional(tenant: Tenant, id: number): Promise<Professional> {
+    const professional = await this.professionals.findById(tenant.id, id);
     if (!professional) {
       throw new AppError(404, "Professional not found");
     }
-    return [professional];
+    return professional;
   }
 
   /** The hours one barber takes bookings in on a date, or null on a day off. */

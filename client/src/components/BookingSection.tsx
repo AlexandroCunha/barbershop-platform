@@ -7,7 +7,7 @@ import type { Availability, Confirmation, Professional, Service } from "../types
 import { validateStep, type BookingErrors } from "../booking-validation";
 
 const STEPS = ["Service", "Date and time", "Details and confirm"] as const;
-const NO_TIMES: Availability = { date: "", times: [] };
+const NO_TIMES: Availability = { date: "", times: [], barbers: [] };
 
 interface Props {
   services: Service[] | null;
@@ -16,6 +16,7 @@ interface Props {
   serviceId?: number;
   professionalId?: number;
   onServiceChange: (id: number) => void;
+  onProfessionalChange: (id: number | undefined) => void;
 }
 
 export function BookingSection({
@@ -25,6 +26,7 @@ export function BookingSection({
   serviceId,
   professionalId,
   onServiceChange,
+  onProfessionalChange,
 }: Props) {
   const { api, business } = useTenant();
 
@@ -39,22 +41,38 @@ export function BookingSection({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
+  // Every barber's times are loaded at once, so the customer can choose a barber after the time.
   const availability = useAsync<Availability>(
-    (signal) =>
-      serviceId && date ? api.availability(serviceId, date, professionalId, signal) : Promise.resolve(NO_TIMES),
-    [api, serviceId, date, professionalId],
+    (signal) => (serviceId && date ? api.availability(serviceId, date, undefined, signal) : Promise.resolve(NO_TIMES)),
+    [api, serviceId, date],
   );
   const service = services?.find((item) => item.id === serviceId);
   const barber = professionals?.find((item) => item.id === professionalId);
   const today = todayIn(business.timeZone);
 
-  // Times depend on the barber, so a previously chosen time no longer applies.
+  /** The times one barber has free. Empty until the availability has loaded. */
+  function barberTimes(id: number): string[] {
+    return availability.data?.barbers.find((item) => item.professionalId === id)?.times ?? [];
+  }
+
+  /** The barbers who have a time free, in the shop's order. */
+  function availableBarbers(slot: string): Professional[] {
+    const free = availability.data?.barbers.filter((item) => item.times.includes(slot)).map((item) => item.professionalId);
+    return (professionals ?? []).filter((person) => free?.includes(person.id));
+  }
+
+  // The times offered follow the barber once one is chosen, or every barber's times until then.
+  const offeredTimes = professionalId !== undefined ? barberTimes(professionalId) : (availability.data?.times ?? []);
+
+  // A chosen time that the newly chosen barber does not have free is cleared.
   useEffect(() => {
-    setTime(undefined);
-  }, [professionalId]);
+    if (time && professionalId !== undefined && !barberTimes(professionalId).includes(time)) {
+      setTime(undefined);
+    }
+  }, [professionalId, availability.data]);
 
   function validate(current: number): BookingErrors {
-    return validateStep(current, { serviceId, date, time, name, email, phone }, today);
+    return validateStep(current, { serviceId, professionalId, date, time, name, email, phone }, today);
   }
 
   function goNext() {
@@ -80,7 +98,7 @@ export function BookingSection({
 
     const found = validate(2);
     setErrors(found);
-    if (!serviceId || !date || !time || Object.keys(found).length > 0) return;
+    if (!serviceId || !professionalId || !date || !time || Object.keys(found).length > 0) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -113,6 +131,7 @@ export function BookingSection({
 
   function startAgain() {
     setConfirmation(null);
+    onProfessionalChange(undefined);
     setStep(0);
     setDate("");
     setTime(undefined);
@@ -178,37 +197,74 @@ export function BookingSection({
 
             <form className="booking-form" onSubmit={handleSubmit} noValidate aria-busy={submitting}>
               {step === 0 && (
-                <fieldset>
-                  <legend>Choose a service</legend>
-                  {!services && !loadError && <p className="status">Loading services…</p>}
-                  <div className="option-list">
-                    {services?.map((item) => (
-                      <label key={item.id} className={`option${serviceId === item.id ? " is-selected" : ""}`}>
+                <>
+                  <fieldset>
+                    <legend>Choose a service</legend>
+                    {!services && !loadError && <p className="status">Loading services…</p>}
+                    <div className="option-list">
+                      {services?.map((item) => (
+                        <label key={item.id} className={`option${serviceId === item.id ? " is-selected" : ""}`}>
+                          <input
+                            type="radio"
+                            name="service"
+                            value={item.id}
+                            checked={serviceId === item.id}
+                            onChange={() => onServiceChange(item.id)}
+                          />
+                          <span className="option-main">
+                            <span className="option-title">{item.name}</span>
+                            {item.description && <span className="muted">{item.description}</span>}
+                          </span>
+                          <span className="option-side">
+                            <span className="option-price">{formatPrice(item.priceCents, business.currency)}</span>
+                            <span className="muted">{formatDuration(item.durationMinutes)}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <FieldError id="err-service" message={errors.service} />
+                  </fieldset>
+
+                  <fieldset>
+                    <legend>Choose a barber (optional)</legend>
+                    <p className="muted">Skip this and you will choose your barber once you have picked a time.</p>
+                    <div className="option-list">
+                      <label className={`option${professionalId === undefined ? " is-selected" : ""}`}>
                         <input
                           type="radio"
-                          name="service"
-                          value={item.id}
-                          checked={serviceId === item.id}
-                          onChange={() => onServiceChange(item.id)}
+                          name="barber"
+                          value=""
+                          checked={professionalId === undefined}
+                          onChange={() => onProfessionalChange(undefined)}
                         />
                         <span className="option-main">
-                          <span className="option-title">{item.name}</span>
-                          {item.description && <span className="muted">{item.description}</span>}
-                        </span>
-                        <span className="option-side">
-                          <span className="option-price">{formatPrice(item.priceCents, business.currency)}</span>
-                          <span className="muted">{formatDuration(item.durationMinutes)}</span>
+                          <span className="option-title">No preference</span>
+                          <span className="muted">We will show you who is free at your time.</span>
                         </span>
                       </label>
-                    ))}
-                  </div>
-                  <FieldError id="err-service" message={errors.service} />
-                </fieldset>
+                      {professionals?.map((person) => (
+                        <label key={person.id} className={`option${professionalId === person.id ? " is-selected" : ""}`}>
+                          <input
+                            type="radio"
+                            name="barber"
+                            value={person.id}
+                            checked={professionalId === person.id}
+                            onChange={() => onProfessionalChange(person.id)}
+                          />
+                          <span className="option-main">
+                            <span className="option-title">{person.name}</span>
+                            {person.specialties.length > 0 && <span className="muted">{person.specialties.join(" · ")}</span>}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                </>
               )}
 
               {step === 1 && (
                 <div className="date-time">
-                  <p className="muted">{barber ? `With ${barber.name}` : "With the first available barber"}</p>
+                  <p className="muted">{barber ? `With ${barber.name}` : "Pick a time, then choose your barber."}</p>
 
                   <div className="field">
                     <label htmlFor="booking-date">Date</label>
@@ -242,12 +298,12 @@ export function BookingSection({
                         {availability.error}
                       </p>
                     )}
-                    {date && availability.data && availability.data.times.length === 0 && !availability.loading && (
+                    {date && availability.data && offeredTimes.length === 0 && !availability.loading && (
                       <p className="muted">No times left on this day. Try another date.</p>
                     )}
-                    {availability.data && availability.data.times.length > 0 && (
+                    {offeredTimes.length > 0 && (
                       <div className="times" role="group" aria-labelledby="times-label">
-                        {availability.data.times.map((slot) => (
+                        {offeredTimes.map((slot) => (
                           <button
                             key={slot}
                             type="button"
@@ -262,6 +318,35 @@ export function BookingSection({
                     )}
                     <FieldError id="err-time" message={errors.time} />
                   </div>
+
+                  {!barber && time && (
+                    <fieldset>
+                      <legend>Choose your barber for {time}</legend>
+                      <div className="option-list">
+                        {availableBarbers(time).map((person) => (
+                          <label
+                            key={person.id}
+                            className={`option${professionalId === person.id ? " is-selected" : ""}`}
+                          >
+                            <input
+                              type="radio"
+                              name="barber-at-time"
+                              value={person.id}
+                              checked={professionalId === person.id}
+                              onChange={() => onProfessionalChange(person.id)}
+                            />
+                            <span className="option-main">
+                              <span className="option-title">{person.name}</span>
+                              {person.specialties.length > 0 && (
+                                <span className="muted">{person.specialties.join(" · ")}</span>
+                              )}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      <FieldError id="err-barber" message={errors.barber} />
+                    </fieldset>
+                  )}
                 </div>
               )}
 
@@ -348,7 +433,7 @@ export function BookingSection({
               </div>
               <div>
                 <dt>Barber</dt>
-                <dd>{barber?.name ?? "First available"}</dd>
+                <dd>{barber?.name ?? "Not chosen"}</dd>
               </div>
               <div>
                 <dt>Date</dt>

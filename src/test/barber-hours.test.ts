@@ -85,6 +85,11 @@ test("the API shows the shop's hours for a barber who has none, and the barber's
   assert.equal(shopsHours.sunday, null);
 });
 
+/** The start times offered on a date, across the barbers asked for. */
+async function offeredTimes(service: BookingService, date: string, professionalId?: number): Promise<string[]> {
+  return (await service.availability(shop, 1, date, professionalId)).flatMap((barber) => barber.times);
+}
+
 /** Only the repositories a booking availability check reads. */
 function availabilityService(hours: BarberWeek | null) {
   const professional = { id: 1, name: "Daniel", specialties: [], bio: "", photo: null };
@@ -106,18 +111,18 @@ function availabilityService(hours: BarberWeek | null) {
 
 test("availability follows the barber's own hours", async () => {
   const week = parseBarberWeek(validWeek(), DEFAULT_BUSINESS.hours);
-  const starts = await availabilityService(week).availability(shop, 1, MONDAY, 1);
+  const starts = await offeredTimes(availabilityService(week), MONDAY, 1);
   assert.deepEqual(starts, ["13:00", "13:30", "14:00", "14:30"]);
 });
 
 test("availability is empty on a day the barber does not work", async () => {
   const week = parseBarberWeek(validWeek(), DEFAULT_BUSINESS.hours);
-  const starts = await availabilityService(week).availability(shop, 1, "2030-01-09", 1);
+  const starts = await offeredTimes(availabilityService(week), "2030-01-09", 1);
   assert.deepEqual(starts, []);
 });
 
 test("a barber without hours of their own is offered the shop's opening hours", async () => {
-  const starts = await availabilityService(null).availability(shop, 1, MONDAY, 1);
+  const starts = await offeredTimes(availabilityService(null), MONDAY, 1);
   assert.equal(starts[0], "09:00");
   assert.equal(starts.at(-1), "18:30");
 });

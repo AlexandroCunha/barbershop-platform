@@ -30,7 +30,7 @@ export function parseBookingRequest(body: unknown): BookingRequest {
 
   return {
     serviceId: parsePositiveInt(input.serviceId, "serviceId"),
-    professionalId: parseOptionalPositiveInt(input.professionalId, "professionalId"),
+    professionalId: parseBarber(input.professionalId),
     date: parseDate(input.date),
     startMinute: timeToMinutes(parseTime(input.time)),
     customerName: parseText(input.customerName, "customerName"),
@@ -45,6 +45,14 @@ function parsePositiveInt(value: unknown, field: string): number {
     throw new AppError(400, `${field} must be a positive integer`);
   }
   return id;
+}
+
+/** A booking always names its barber. The customer chooses one before confirming. */
+function parseBarber(value: unknown): number {
+  if (value === undefined || value === null || value === "") {
+    throw new AppError(400, "Choose a barber for this booking");
+  }
+  return parsePositiveInt(value, "professionalId");
 }
 
 /** Absent or empty means "no preference"; anything else must be a valid id. */

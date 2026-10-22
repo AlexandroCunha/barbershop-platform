@@ -30,6 +30,12 @@ const log = (agent, name, ok, detail = "") => {
 };
 
 /** Small HTTP helper that returns status, parsed body and any cookie set by the response. */
+/** The barbers who have this time free, in the order the availability list gives them. */
+async function freeBarbers(serviceId, date, time) {
+  const res = await call("GET", `/api/t/${slug}/availability?serviceId=${serviceId}&date=${date}`);
+  return (res.json?.barbers ?? []).filter((barber) => barber.times.includes(time)).map((barber) => barber.professionalId);
+}
+
 async function call(method, path, { body, cookie, raw, contentType } = {}) {
   const headers = {};
   if (cookie) headers.Cookie = cookie;
@@ -223,7 +229,7 @@ const removedService = await call("DELETE", `/api/t/${slug}/owner/services/${ser
 log(OWNER, "removes a service from the menu", removedService.status === 204, `HTTP ${removedService.status}`);
 const menu = (await call("GET", `/api/t/${slug}/services`)).json;
 log("customers", "the removed service is no longer on the menu", !menu.some((s) => s.id === services[3].id));
-const removedServiceBooking = await call("POST", `/api/t/${slug}/bookings`, { body: { customerName: "Old Link", customerEmail: "old@example.test", customerPhone: "+353 85 123 4567", serviceId: services[3].id, date: dayAfter(8, 1), time: "09:00" } });
+const removedServiceBooking = await call("POST", `/api/t/${slug}/bookings`, { body: { customerName: "Old Link", customerEmail: "old@example.test", customerPhone: "+353 85 123 4567", serviceId: services[3].id, date: dayAfter(8, 1), time: "09:00", professionalId: barberIds["Ada Reyes"] } });
 log("customers", "an old link to the removed service is refused", removedServiceBooking.status === 404, `HTTP ${removedServiceBooking.status}`);
 
 // ---------------------------------------------------------------------------
@@ -243,11 +249,13 @@ const customerBody = (name, extra = {}) => ({
 const RACE_TIME = "10:00";
 const RACE_DATE = MONDAY;
 const raceCustomers = ["Alice Morgan", "Ben Ortiz", "Chloe Hart", "Dev Shah", "Eve Lind", "Finn Doyle"];
+const raceFree = await freeBarbers(SERVICE_CLASSIC, RACE_DATE, RACE_TIME);
 const raceResults = await Promise.all(
   raceCustomers.map(async (name, index) => {
     // A short, different delay per agent so that requests overlap without being identical.
     await new Promise((resolve) => setTimeout(resolve, index * 3));
-    const preferred = name === "Chloe Hart" ? barberIds["Ada Reyes"] : undefined;
+    // Each customer picks a free barber in turn, so several of them ask for the same chair at once.
+    const chosen = raceFree[index % raceFree.length];
     return {
       name,
       res: await call("POST", `/api/t/${slug}/bookings`, {
@@ -255,7 +263,7 @@ const raceResults = await Promise.all(
           serviceId: SERVICE_CLASSIC,
           date: RACE_DATE,
           time: RACE_TIME,
-          ...(preferred ? { professionalId: preferred } : {}),
+          professionalId: chosen,
         }),
       }),
     };
@@ -277,7 +285,7 @@ log("customers", "race requests answer in under 1s on average", raceAvg < 1000, 
 // Remaining customer journeys, run concurrently with each other.
 const journeys = {
   "Ben Ortiz": async () => {
-    const bad = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Ben Ortiz", { serviceId: SERVICE_BEARD, date: MONDAY, time: "14:00", customerEmail: "not-an-email" }) });
+    const bad = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Ben Ortiz", { professionalId: barberIds["Ada Reyes"], serviceId: SERVICE_BEARD, date: MONDAY, time: "14:00", customerEmail: "not-an-email" }) });
     log("Ben Ortiz", "is refused an invalid email with a clear message", bad.status === 400 && /email/i.test(bad.json.error), bad.json?.error);
     const good = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Ben Ortiz", { serviceId: SERVICE_BEARD, date: MONDAY, time: "14:00", professionalId: barberIds["Ben Walker"] }) });
     log("Ben Ortiz", "books a beard trim with Ben Walker at 14:00", good.status === 201 && good.json.professionalId === barberIds["Ben Walker"], `HTTP ${good.status}`);
@@ -287,11 +295,11 @@ const journeys = {
     log("Chloe Hart", "cannot see times for a past date", past.status === 400, `HTTP ${past.status}`);
     const sunday = await call("GET", `/api/t/${slug}/availability?serviceId=${SERVICE_CLASSIC}&date=${SUNDAY}`);
     log("Chloe Hart", "sees no times on a closed Sunday", sunday.status === 200 && sunday.json.times.length === 0);
-    const closed = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Chloe Hart", { serviceId: SERVICE_CLASSIC, date: SUNDAY, time: "10:00" }) });
+    const closed = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Chloe Hart", { professionalId: barberIds["Ada Reyes"], serviceId: SERVICE_CLASSIC, date: SUNDAY, time: "10:00" }) });
     log("Chloe Hart", "cannot book on a closed Sunday", closed.status === 409, `HTTP ${closed.status}`);
   },
   "Dev Shah": async () => {
-    const noPhone = await call("POST", `/api/t/${slug}/bookings`, { body: { ...customerBody("Dev Shah", { serviceId: SERVICE_BEARD, date: MONDAY, time: "15:00" }), customerPhone: "" } });
+    const noPhone = await call("POST", `/api/t/${slug}/bookings`, { body: { ...customerBody("Dev Shah", { professionalId: barberIds["Ada Reyes"], serviceId: SERVICE_BEARD, date: MONDAY, time: "15:00" }), customerPhone: "" } });
     log("Dev Shah", "is asked for a mobile number", noPhone.status === 400 && /customerPhone/.test(noPhone.json.error), noPhone.json?.error);
     const ghostBarber = await call("GET", `/api/t/${slug}/availability?serviceId=${SERVICE_BEARD}&date=${MONDAY}&professionalId=999999`);
     log("Dev Shah", "gets a 404 for a barber that does not exist", ghostBarber.status === 404, `HTTP ${ghostBarber.status}`);
@@ -305,15 +313,15 @@ const journeys = {
     const lastStart = fade.json.times.at(-1);
     // Times are offered on a 30-minute grid from opening. A 45-minute fade must end by 18:00, so the last start is 17:00.
 log("Eve Lind", "a 45-minute fade is only offered if it ends by closing time", lastStart === "17:00", `last start ${lastStart}`);
-    const tooLate = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Eve Lind", { serviceId: SERVICE_FADE, date: SATURDAY, time: "17:30" }) });
+    const tooLate = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Eve Lind", { professionalId: barberIds["Ada Reyes"], serviceId: SERVICE_FADE, date: SATURDAY, time: "17:30" }) });
     log("Eve Lind", "cannot book a fade that would run past closing", tooLate.status === 409, `HTTP ${tooLate.status}`);
-    const fits = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Eve Lind", { serviceId: SERVICE_FADE, date: SATURDAY, time: "17:00" }) });
+    const fits = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Eve Lind", { serviceId: SERVICE_FADE, date: SATURDAY, time: "17:00", professionalId: (await freeBarbers(SERVICE_FADE, SATURDAY, "17:00"))[0] }) });
     log("Eve Lind", "books the last fade slot of the day", fits.status === 201, `HTTP ${fits.status}`);
   },
   "Finn Doyle": async () => {
-    const shave = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Finn Doyle", { serviceId: addService.json.id, date: MONDAY, time: "16:00" }) });
+    const shave = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Finn Doyle", { serviceId: addService.json.id, date: MONDAY, time: "16:00", professionalId: (await freeBarbers(addService.json.id, MONDAY, "16:00"))[0] }) });
     log("Finn Doyle", "books the new hot towel shave", shave.status === 201, `HTTP ${shave.status}`);
-    const hugeName = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("F".repeat(120), { serviceId: SERVICE_BEARD, date: MONDAY, time: "17:00" }) });
+    const hugeName = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("F".repeat(120), { professionalId: barberIds["Ada Reyes"], serviceId: SERVICE_BEARD, date: MONDAY, time: "17:00" }) });
     log("Finn Doyle", "is refused an overlong name", hugeName.status === 400, `HTTP ${hugeName.status}`);
   },
 };
@@ -384,7 +392,7 @@ ownerCookie = changed.cookie;
 const setLicense = (status) =>
   spawnSync(process.execPath, ["dist/scripts/shop.js", "license", slug, status], { env: childEnv, encoding: "utf8" });
 setLicense("suspended");
-const suspendedBooking = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Late Customer", { serviceId: SERVICE_CLASSIC, date: MONDAY, time: "12:00" }) });
+const suspendedBooking = await call("POST", `/api/t/${slug}/bookings`, { body: customerBody("Late Customer", { professionalId: barberIds["Ada Reyes"], serviceId: SERVICE_CLASSIC, date: MONDAY, time: "12:00" }) });
 log("operator", "suspending the shop stops new bookings", suspendedBooking.status === 403, suspendedBooking.json?.error);
 const ownerView = await call("GET", `/api/t/${slug}/owner/session`, { cookie: ownerCookie });
 log(OWNER, "still sees the suspension and can sign in", ownerView.status === 200 && ownerView.json.license.state === "suspended");

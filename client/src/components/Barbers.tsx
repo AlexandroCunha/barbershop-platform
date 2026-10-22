@@ -19,7 +19,7 @@ export function Barbers({ professionals, selectedId, loading, error, onChoose }:
         <p className="eyebrow">Barbers</p>
         <h2 id="barbers-title">Choose your barber</h2>
         <p className="muted">
-          Tap a portrait to book with that barber. Leave none selected and we will find the first one available.
+          Tap a portrait to book with that barber, or leave none selected and choose one when you pick a time.
         </p>
       </header>
 

@@ -1,11 +1,12 @@
 /** The fields of the booking form that a step can report on. */
-export type BookingField = "service" | "date" | "time" | "name" | "email" | "phone";
+export type BookingField = "service" | "barber" | "date" | "time" | "name" | "email" | "phone";
 
 export type BookingErrors = Partial<Record<BookingField, string>>;
 
 /** Everything the customer has entered so far, before it is sent to the server. */
 export interface BookingDraft {
   serviceId?: number;
+  professionalId?: number;
   date: string;
   time?: string;
   name: string;
@@ -41,6 +42,7 @@ export function validateStep(step: number, draft: BookingDraft, today: string): 
     if (!draft.date) found.date = "Choose a date.";
     else if (draft.date < today) found.date = "Choose today or a later date.";
     if (!draft.time) found.time = "Choose an available time.";
+    else if (draft.professionalId === undefined) found.barber = "Choose a barber for this time.";
   }
 
   if (step === 2) {
