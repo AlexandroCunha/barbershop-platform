@@ -156,6 +156,7 @@ export class BookingService {
       customerName: request.customerName,
       customerEmail: request.customerEmail,
       customerPhone: request.customerPhone,
+      priceCents: service.priceCents,
     };
     // The barber hears about the booking at the address of their own login, when they have one.
     const barberEmail = (await this.barberAccounts.findByProfessional(tenant.id, professional.id))?.email ?? null;

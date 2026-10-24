@@ -193,10 +193,10 @@ async function enqueue(client: PoolClient, tenantId: number, bookingId: string, 
   for (const message of messages) {
     // A confirmation or reminder is queued once per booking; a repeat is ignored, not an error.
     await client.query(
-      `INSERT INTO notifications (tenant_id, booking_id, kind, to_address, subject, body, send_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO notifications (tenant_id, booking_id, kind, to_address, subject, body, html, send_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT DO NOTHING`,
-      [tenantId, bookingId, message.kind, message.toAddress, message.subject, message.body, message.sendAt],
+      [tenantId, bookingId, message.kind, message.toAddress, message.subject, message.body, message.html, message.sendAt],
     );
   }
 }

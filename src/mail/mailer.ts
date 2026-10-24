@@ -4,8 +4,10 @@ import type { MailConfig, SmtpSettings } from "../config/mail-config.js";
 export interface OutgoingMail {
   to: string;
   subject: string;
-  /** Plain text only. Nothing in a message is rendered as HTML, so nothing in it can run as a script. */
+  /** The plain-text version. Every message has one, for clients that do not show HTML. */
   text: string;
+  /** The HTML version. Its text is escaped when built, so customer details cannot run as markup. */
+  html?: string;
 }
 
 /** Sends one e-mail. Throws when the message could not be handed to the mail service. */
@@ -34,6 +36,7 @@ export class SmtpMailer implements Mailer {
       to: mail.to,
       subject: singleLine(mail.subject),
       text: mail.text,
+      html: mail.html,
     });
   }
 }

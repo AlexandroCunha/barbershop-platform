@@ -2,6 +2,7 @@ import { hashPassword } from "../auth/passwords.js";
 import { createLinkToken, hashLinkToken } from "../auth/link-token.js";
 import type { Tenant } from "../domain/tenant.js";
 import type { Mailer } from "../mail/mailer.js";
+import { renderEmail } from "../domain/email-template.js";
 import type { BarberAccountRepository, OwnerRepository, PasswordResetRepository } from "../repositories/types.js";
 import { AppError } from "../utils/app-error.js";
 import type { Clock } from "../utils/clock.js";
@@ -54,17 +55,29 @@ export class PasswordResetService {
     });
 
     const link = `${this.config.publicUrl}/${tenant.slug}/redefinir?area=${area}&token=${token}`;
+    const who = area === "owner" ? "owner" : "barber";
     await this.mailer.send({
       to: account.email,
       subject: `Reset your password for ${tenant.business.name}`,
       text: [
-        `You asked to reset your ${area === "owner" ? "owner" : "barber"} password for ${tenant.business.name}.`,
+        `You asked to reset your ${who} password for ${tenant.business.name}.`,
         "",
         `Choose a new password here (the link works once and for one hour):`,
         link,
         "",
         "If you did not ask for this, ignore this e-mail. Your password stays the same.",
       ].join("\n"),
+      html: renderEmail({
+        shopName: tenant.business.name,
+        preheader: "Choose a new password. The link works once, for one hour.",
+        heading: "Reset your password",
+        paragraphs: [
+          `You asked to reset your ${who} password for ${tenant.business.name}. Choose a new one with the button below.`,
+          "The link works once, and only for one hour.",
+        ],
+        button: { label: "Choose a new password", url: link },
+        footer: ["If you did not ask for this, ignore this e-mail. Your password stays the same."],
+      }),
     });
   }
 

@@ -28,7 +28,7 @@ export class NotificationWorker {
 
     for (const message of due) {
       try {
-        await this.mailer.send({ to: message.toAddress, subject: message.subject, text: message.body });
+        await this.mailer.send({ to: message.toAddress, subject: message.subject, text: message.body, html: message.html });
         await this.outbox.markSent(message.id);
       } catch (error) {
         // The log names the message, never the address or the text.

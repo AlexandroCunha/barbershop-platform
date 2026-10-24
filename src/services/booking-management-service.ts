@@ -154,6 +154,7 @@ export class BookingManagementService {
       customerName: booking.customerName,
       customerEmail: booking.customerEmail,
       customerPhone: booking.customerPhone,
+      priceCents: service?.priceCents ?? 0,
     };
   }
 }

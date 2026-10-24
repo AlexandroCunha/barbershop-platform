@@ -32,6 +32,7 @@ const facts: BookingFacts = {
   customerName: "Ada Lovelace",
   customerEmail: "ada@example.com",
   customerPhone: "+353 85 123 4567",
+  priceCents: 2500,
 };
 
 const messages = (enabled = true) => new BookingMessages({ secret: SECRET, publicUrl: "https://shop.test", enabled }, clock);

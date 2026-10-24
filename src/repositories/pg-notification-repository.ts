@@ -6,6 +6,7 @@ interface ClaimedRow {
   to_address: string;
   subject: string;
   body: string;
+  html: string;
   attempts: number;
 }
 
@@ -26,7 +27,7 @@ export class PgNotificationRepository implements NotificationRepository {
          LIMIT $3
          FOR UPDATE SKIP LOCKED
        )
-       RETURNING id, to_address, subject, body, attempts`,
+       RETURNING id, to_address, subject, body, html, attempts`,
       [now, leaseUntil, limit],
     );
     return rows.map((row) => ({
@@ -34,13 +35,14 @@ export class PgNotificationRepository implements NotificationRepository {
       toAddress: row.to_address,
       subject: row.subject,
       body: row.body,
+      html: row.html,
       attempts: row.attempts,
     }));
   }
 
   async markSent(id: number): Promise<void> {
     await this.db.query(
-      `UPDATE notifications SET sent_at = now(), retry_at = NULL, to_address = '', body = '' WHERE id = $1`,
+      `UPDATE notifications SET sent_at = now(), retry_at = NULL, to_address = '', subject = '', body = '', html = '' WHERE id = $1`,
       [id],
     );
   }
@@ -51,7 +53,7 @@ export class PgNotificationRepository implements NotificationRepository {
 
   async markFailed(id: number): Promise<void> {
     await this.db.query(
-      `UPDATE notifications SET failed_at = now(), retry_at = NULL, to_address = '', body = '' WHERE id = $1`,
+      `UPDATE notifications SET failed_at = now(), retry_at = NULL, to_address = '', body = '', html = '' WHERE id = $1`,
       [id],
     );
   }

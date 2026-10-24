@@ -162,7 +162,10 @@ export interface NotificationDraft {
   kind: NotificationKind;
   toAddress: string;
   subject: string;
+  /** Plain-text version, always sent. */
   body: string;
+  /** HTML version, sent with the plain text so every mail client can show one of them. */
+  html: string;
   sendAt: Date;
 }
 
@@ -202,6 +205,7 @@ export interface ClaimedNotification {
   toAddress: string;
   subject: string;
   body: string;
+  html: string;
   attempts: number;
 }
 

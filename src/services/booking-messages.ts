@@ -29,6 +29,7 @@ export interface BookingFacts {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  priceCents: number;
 }
 
 export interface BookingMessageConfig {
@@ -66,7 +67,14 @@ export class BookingMessages {
     ];
     if (barberEmail) {
       const note = barberBookingMail(this.barberDetails(facts));
-      drafts.push({ kind: "barber-booking", toAddress: barberEmail, subject: note.subject, body: note.text, sendAt: now });
+      drafts.push({
+        kind: "barber-booking",
+        toAddress: barberEmail,
+        subject: note.subject,
+        body: note.text,
+        html: note.html,
+        sendAt: now,
+      });
     }
     return drafts;
   }
@@ -108,7 +116,7 @@ export class BookingMessages {
   }
 
   private draft(kind: NotificationKind, facts: BookingFacts, content: MailContent, sendAt: Date): NotificationDraft {
-    return { kind, toAddress: facts.customerEmail, subject: content.subject, body: content.text, sendAt };
+    return { kind, toAddress: facts.customerEmail, subject: content.subject, body: content.text, html: content.html, sendAt };
   }
 
   private details(facts: BookingFacts, bookingId: string): BookingMailDetails {
@@ -117,13 +125,23 @@ export class BookingMessages {
     const expiresAt = new Date(this.clock.now().getTime() + MANAGE_LINK_DAYS * DAY_MS);
     const token = issueManageToken(this.config.secret, { tenantId: tenant.id, bookingId }, expiresAt);
 
+    const { business } = tenant;
+    const minutes = facts.endMinute - facts.startMinute;
     return {
-      shopName: tenant.business.name,
+      shopName: business.name,
+      shopAddress: [business.address.street, business.address.city, business.address.postcode, business.address.country]
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(", "),
+      shopPhone: business.phone,
+      mapsUrl: business.mapsUrl,
       serviceName: facts.serviceName,
       barberName: facts.barberName,
       date: facts.date,
       startTime: minutesToTime(facts.startMinute),
       endTime: minutesToTime(facts.endMinute),
+      durationText: `${minutes} min`,
+      priceText: new Intl.NumberFormat("en-IE", { style: "currency", currency: business.currency }).format(facts.priceCents / 100),
       customerName: facts.customerName,
       manageUrl: `${shopUrl}/reserva?token=${token}`,
       shopUrl,

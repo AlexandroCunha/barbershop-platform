@@ -16,7 +16,9 @@ export function BookingConfirmation({ confirmation, service, professionals, onSt
   const address = [business.address.street, business.address.city, business.address.postcode].filter(Boolean).join(", ");
 
   return (
-    <section id="book" className="block" data-reveal aria-labelledby="book-title">
+    // Shown right after the booking is made, so it is visible at once. The reveal-on-scroll effect only
+    // covers sections that exist when the page loads, so this one must not wait for it.
+    <section id="book" className="block" aria-labelledby="book-title">
       <div className="container">
         <div className="confirmation" role="status">
           <p className="eyebrow">Booking confirmed</p>

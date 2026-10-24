@@ -14,6 +14,7 @@ interface Row {
   toAddress: string;
   subject: string;
   body: string;
+  html: string;
   sendAt: Date;
   attempts: number;
   retryAt: Date | null;
@@ -33,7 +34,7 @@ class MemoryOutbox implements NotificationRepository {
       row.attempts += 1;
       row.retryAt = leaseUntil;
     }
-    return due.map((row) => ({ id: row.id, toAddress: row.toAddress, subject: row.subject, body: row.body, attempts: row.attempts }));
+    return due.map((row) => ({ id: row.id, toAddress: row.toAddress, subject: row.subject, body: row.body, html: row.html, attempts: row.attempts }));
   }
 
   async markSent(id: number): Promise<void> {
@@ -75,6 +76,7 @@ function outboxWith(...rows: Partial<Row>[]): MemoryOutbox {
       toAddress: "ada@example.com",
       subject: "Booking confirmed",
       body: "Your booking is confirmed.",
+      html: "<p>Your booking is confirmed.</p>",
       sendAt: NOW,
       attempts: 0,
       retryAt: null,
