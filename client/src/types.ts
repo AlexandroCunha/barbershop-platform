@@ -102,6 +102,8 @@ export interface Confirmation {
   startTime: string;
   endTime: string;
   customerName: string;
+  /** The address the confirmation e-mail was sent to, or null when this shop sends no e-mail. */
+  confirmationEmail: string | null;
 }
 
 export interface MediaItem {

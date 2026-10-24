@@ -60,7 +60,7 @@ const mailer = createMailer(config.mail);
 const mailEnabled = config.mail.kind !== "off";
 const messages = new BookingMessages({ secret: config.sessionSecret, publicUrl: config.publicUrl, enabled: mailEnabled }, clock);
 
-const bookingService = new BookingService(services, professionals, bookings, clock, barberHours, messages);
+const bookingService = new BookingService(services, professionals, bookings, clock, barberHours, messages, barberAccounts);
 const management = new BookingManagementService(bookings, services, professionals, bookingService, messages, clock);
 const barbers = new BarberService(barberAccounts, professionals, services, bookings, sessions, clock, barberHours);
 const passwordReset = new PasswordResetService(owners, barberAccounts, passwordResets, sessions, mailer, clock, {

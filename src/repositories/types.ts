@@ -155,7 +155,7 @@ export interface BookingRecord extends Booking {
   cancelledAt: Date | null;
 }
 
-export type NotificationKind = "confirmation" | "reminder" | "cancellation" | "moved";
+export type NotificationKind = "confirmation" | "reminder" | "cancellation" | "moved" | "barber-booking";
 
 /** An e-mail about a booking. It is written to the outbox in the same transaction as the change it reports. */
 export interface NotificationDraft {

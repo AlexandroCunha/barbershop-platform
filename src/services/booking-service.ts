@@ -4,6 +4,7 @@ import { allowsBookings, licenseInfo, type Tenant } from "../domain/tenant.js";
 import type { TimeWindow } from "../domain/opening-hours.js";
 import type { Booking, Professional, Service } from "../domain/types.js";
 import type {
+  BarberAccountRepository,
   BarberHoursRepository,
   BookingRepository,
   ProfessionalRepository,
@@ -64,7 +65,13 @@ export class BookingService {
     private readonly clock: Clock,
     private readonly hours: BarberHoursRepository,
     private readonly messages: BookingMessages,
+    private readonly barberAccounts: BarberAccountRepository,
   ) {}
+
+  /** Whether the customer's confirmation e-mail is sent on this server. */
+  get sendsConfirmations(): boolean {
+    return this.messages.enabled;
+  }
 
   listServices(tenant: Tenant): Promise<Service[]> {
     return this.services.findAll(tenant.id);
@@ -148,7 +155,10 @@ export class BookingService {
       endMinute,
       customerName: request.customerName,
       customerEmail: request.customerEmail,
+      customerPhone: request.customerPhone,
     };
+    // The barber hears about the booking at the address of their own login, when they have one.
+    const barberEmail = (await this.barberAccounts.findByProfessional(tenant.id, professional.id))?.email ?? null;
 
     // Two customers can still race for the same chair; the database's no-overlap rule refuses the second.
     return this.bookings.create(
@@ -163,7 +173,7 @@ export class BookingService {
         customerEmail: request.customerEmail,
         customerPhone: request.customerPhone,
       },
-      (id) => this.messages.created(facts, id),
+      (id) => this.messages.created(facts, id, barberEmail),
     );
   }
 

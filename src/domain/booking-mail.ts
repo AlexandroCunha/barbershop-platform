@@ -85,3 +85,43 @@ function whenOf(d: BookingMailDetails): string {
   });
   return `${day} at ${d.startTime} to ${d.endTime}`;
 }
+
+/** What a barber's new-booking e-mail says. Contact details are for the barber to reach the customer. */
+export interface BarberMailDetails {
+  shopName: string;
+  barberName: string;
+  serviceName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  /** The barber's own area, where they see their upcoming bookings. */
+  agendaUrl: string;
+}
+
+export function barberBookingMail(d: BarberMailDetails): MailContent {
+  return {
+    subject: `New booking: ${d.customerName}, ${shortDay(d.date)} at ${d.startTime}`,
+    text: [
+      `Hello ${d.barberName.split(" ")[0]},`,
+      "",
+      `You have a new booking at ${d.shopName}.`,
+      "",
+      `Customer: ${d.customerName}`,
+      `Service: ${d.serviceName}`,
+      `When: ${whenText(d.date, d.startTime, d.endTime)}`,
+      `Email: ${d.customerEmail}`,
+      `Phone: ${d.customerPhone}`,
+      "",
+      `Your upcoming bookings: ${d.agendaUrl}`,
+    ].join("\n"),
+  };
+}
+
+const shortDay = (isoDate: string): string =>
+  new Date(`${isoDate}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+
+const whenText = (isoDate: string, startTime: string, endTime: string): string =>
+  `${new Date(`${isoDate}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" })} at ${startTime} to ${endTime}`;

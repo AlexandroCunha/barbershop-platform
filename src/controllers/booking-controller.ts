@@ -7,7 +7,7 @@ import { minutesToTime } from "../utils/time.js";
 import { parseAvailabilityQuery, parseBookingId, parseBookingRequest, parseSlotChange } from "../validations/booking.js";
 
 /** Public shape of a booking. The customer's contact details are never returned. */
-const toBookingResponse = (booking: Booking) => ({
+const toBookingResponse = (booking: Booking, confirmationEmail: string | null) => ({
   id: booking.id,
   serviceId: booking.serviceId,
   professionalId: booking.professionalId,
@@ -15,6 +15,8 @@ const toBookingResponse = (booking: Booking) => ({
   startTime: minutesToTime(booking.startMinute),
   endTime: minutesToTime(booking.endMinute),
   customerName: booking.customerName,
+  /** The address the confirmation e-mail went to, or null when no e-mail is sent on this server. */
+  confirmationEmail,
 });
 
 export class BookingController {
@@ -57,7 +59,9 @@ export class BookingController {
   };
 
   book = async (req: Request, res: Response): Promise<void> => {
-    const booking = await this.service.book(tenantOf(req), parseBookingRequest(req.body));
-    res.status(201).json(toBookingResponse(booking));
+    const request = parseBookingRequest(req.body);
+    const booking = await this.service.book(tenantOf(req), request);
+    const confirmationEmail = this.service.sendsConfirmations ? request.customerEmail : null;
+    res.status(201).json(toBookingResponse(booking, confirmationEmail));
   };
 }

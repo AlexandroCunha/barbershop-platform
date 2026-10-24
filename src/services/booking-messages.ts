@@ -1,5 +1,6 @@
 import { issueManageToken } from "../auth/manage-token.js";
 import {
+  barberBookingMail,
   cancellationMail,
   confirmationMail,
   movedMail,
@@ -27,6 +28,7 @@ export interface BookingFacts {
   endMinute: number;
   customerName: string;
   customerEmail: string;
+  customerPhone: string;
 }
 
 export interface BookingMessageConfig {
@@ -47,14 +49,41 @@ export class BookingMessages {
     private readonly clock: Clock,
   ) {}
 
-  /** A confirmation now, and a reminder the day before the start when that is still ahead. */
-  created(facts: BookingFacts, bookingId: string): NotificationDraft[] {
+  get enabled(): boolean {
+    return this.config.enabled;
+  }
+
+  /**
+   * A confirmation to the customer now, a reminder the day before the start when that is still ahead, and,
+   * when the barber has a login with an e-mail address, a note to the barber about the new booking.
+   */
+  created(facts: BookingFacts, bookingId: string, barberEmail: string | null): NotificationDraft[] {
     if (!this.config.enabled) return [];
     const now = this.clock.now();
-    return [
+    const drafts = [
       this.draft("confirmation", facts, confirmationMail(this.details(facts, bookingId)), now),
       ...this.reminderIfAhead(facts, bookingId),
     ];
+    if (barberEmail) {
+      const note = barberBookingMail(this.barberDetails(facts));
+      drafts.push({ kind: "barber-booking", toAddress: barberEmail, subject: note.subject, body: note.text, sendAt: now });
+    }
+    return drafts;
+  }
+
+  private barberDetails(facts: BookingFacts) {
+    return {
+      shopName: facts.tenant.business.name,
+      barberName: facts.barberName,
+      serviceName: facts.serviceName,
+      date: facts.date,
+      startTime: minutesToTime(facts.startMinute),
+      endTime: minutesToTime(facts.endMinute),
+      customerName: facts.customerName,
+      customerEmail: facts.customerEmail,
+      customerPhone: facts.customerPhone,
+      agendaUrl: `${this.config.publicUrl}/${facts.tenant.slug}/barber`,
+    };
   }
 
   cancelled(facts: BookingFacts, bookingId: string): NotificationDraft[] {

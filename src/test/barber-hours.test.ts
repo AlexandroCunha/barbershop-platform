@@ -108,7 +108,7 @@ function availabilityService(hours: BarberWeek | null) {
   };
   const clock: Clock = { now: () => new Date("2030-01-01T10:00:00Z"), today: () => "2030-01-01" };
   const messages = new BookingMessages({ secret: "test-secret-test-secret-test-secret-32", publicUrl: "https://shop.test", enabled: false }, clock);
-  return new BookingService(services, professionals, bookings, clock, barberHours, messages);
+  return new BookingService(services, professionals, bookings, clock, barberHours, messages, { findByProfessional: async () => null } as never);
 }
 
 test("availability follows the barber's own hours", async () => {

@@ -153,6 +153,7 @@ export class BookingManagementService {
       endMinute: when.endMinute,
       customerName: booking.customerName,
       customerEmail: booking.customerEmail,
+      customerPhone: booking.customerPhone,
     };
   }
 }

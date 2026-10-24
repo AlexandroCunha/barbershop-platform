@@ -191,6 +191,7 @@ function setup() {
     clock,
     { findByProfessional: async () => null, replace: async () => undefined },
     messages,
+    { findByProfessional: async () => null } as never,
   );
   const management = new BookingManagementService(bookings, services, professionals, service, messages, clock);
   return { service, bookings, messages, management, services, professionals };
