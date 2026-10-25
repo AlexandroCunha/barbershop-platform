@@ -35,6 +35,9 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      # Resend's HTTP API. Use MAIL_TRANSPORT=resend with this key: it works where outbound SMTP times out.
+      - key: RESEND_API_KEY
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

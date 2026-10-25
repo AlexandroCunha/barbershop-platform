@@ -27,7 +27,8 @@ Set these variables in the server's environment, or in a `.env` file that only t
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | when `MEDIA_STORAGE=s3` | Bucket and credentials. The app refuses to start if one is missing. |
 | `S3_REGION` | no | Defaults to `auto`, which is what R2 expects. |
 | `PUBLIC_URL` | yes, on the live site | The address the site is reached at, for example `https://your-shop.example`. E-mail links are built from it. |
-| `MAIL_TRANSPORT` | no | `smtp` sends e-mail. `off` (the default on the live site) sends none. `console` prints e-mail to the terminal and is refused on the live site. |
+| `MAIL_TRANSPORT` | no | `resend` sends through Resend's HTTP API (recommended on hosts that block outbound SMTP, as Render's free plan can). `smtp` uses any SMTP server. `off` (the default on the live site) sends none. `console` prints e-mail to the terminal and is refused on the live site. |
+| `RESEND_API_KEY` | when `MAIL_TRANSPORT=resend` | A Resend API key with sending access. |
 | `MAIL_FROM` | when `MAIL_TRANSPORT=smtp` | The sender, for example `Barbershop <bookings@your-domain.example>`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | when `MAIL_TRANSPORT=smtp` | The mail service's SMTP details. Port 465 uses TLS from the start; other ports use STARTTLS. `SMTP_SECURE=true` forces TLS. |
 

@@ -14,12 +14,34 @@ export interface SmtpSettings {
  * the e-mails contain links that sign people in, so production refuses it. `off` keeps booking
  * working and sends nothing.
  */
-export type MailConfig = { kind: "off" } | { kind: "console" } | { kind: "smtp"; settings: SmtpSettings };
+/** Sends through Resend's HTTPS API. Used where outbound SMTP is blocked or times out, as on the free host. */
+export interface ResendSettings {
+  apiKey: string;
+  from: string;
+}
+
+export type MailConfig =
+  | { kind: "off" }
+  | { kind: "console" }
+  | { kind: "smtp"; settings: SmtpSettings }
+  | { kind: "resend"; settings: ResendSettings };
 
 export function parseMail(env: NodeJS.ProcessEnv, production: boolean): MailConfig {
   const kind = env.MAIL_TRANSPORT?.trim().toLowerCase() || (production ? "off" : "console");
 
   if (kind === "off") return { kind: "off" };
+  if (kind === "resend") {
+    const apiKey = env.RESEND_API_KEY?.trim();
+    const from = env.MAIL_FROM?.trim();
+    const missing = [!apiKey && "RESEND_API_KEY", !from && "MAIL_FROM"].filter(Boolean);
+    if (missing.length > 0 || !apiKey || !from) {
+      throw new Error(`MAIL_TRANSPORT=resend needs these variables: ${missing.join(", ")}`);
+    }
+    if (!from.includes("@")) {
+      throw new Error("MAIL_FROM must include an e-mail address, such as bookings@example.com");
+    }
+    return { kind: "resend", settings: { apiKey, from } };
+  }
   if (kind === "console") {
     if (production) {
       throw new Error("MAIL_TRANSPORT=console is for development. Use smtp, or off, on the live site.");
@@ -27,7 +49,7 @@ export function parseMail(env: NodeJS.ProcessEnv, production: boolean): MailConf
     return { kind: "console" };
   }
   if (kind !== "smtp") {
-    throw new Error(`MAIL_TRANSPORT must be "smtp", "console" or "off", not "${kind}"`);
+    throw new Error(`MAIL_TRANSPORT must be "smtp", "resend", "console" or "off", not "${kind}"`);
   }
 
   const host = env.SMTP_HOST?.trim();

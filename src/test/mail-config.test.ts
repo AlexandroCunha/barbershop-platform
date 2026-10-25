@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { loadConfig } from "../config/env.js";
 import { parseMail } from "../config/mail-config.js";
-import { singleLine } from "../mail/mailer.js";
+import { ResendMailer, singleLine } from "../mail/mailer.js";
 
 const BASE = { DATABASE_URL: "postgres://example/db", SESSION_SECRET: "x".repeat(40) };
 
@@ -43,4 +43,33 @@ test("on the live site the public address must be https, and it is kept without 
 
 test("a subject stays on one line, so a shop name cannot add a mail header", () => {
   assert.equal(singleLine("Booking\r\nBcc: someone@example.com"), "Booking Bcc: someone@example.com");
+});
+
+test("Resend's HTTP API needs an API key and a sender with an address", () => {
+  assert.throws(() => parseMail({ MAIL_TRANSPORT: "resend", MAIL_FROM: "a@example.com" }, true), /RESEND_API_KEY/);
+  assert.throws(() => parseMail({ MAIL_TRANSPORT: "resend", RESEND_API_KEY: "re_x", MAIL_FROM: "no-at" }, true), /MAIL_FROM/);
+  const config = parseMail({ MAIL_TRANSPORT: "resend", RESEND_API_KEY: "re_x", MAIL_FROM: "Trimly <a@example.com>" }, true);
+  assert.equal(config.kind, "resend");
+});
+
+test("the Resend mailer posts to the API with the key, and reports only the status when refused", async () => {
+  const calls: { url: string; init: RequestInit }[] = [];
+  const ok = new ResendMailer({ apiKey: "re_secret", from: "Trimly <a@example.com>" }, (async (url: string, init: RequestInit) => {
+    calls.push({ url, init });
+    return new Response("{}", { status: 200 });
+  }) as typeof fetch);
+  await ok.send({ to: "ada@example.com", subject: "Hi\r\nBcc: x@example.com", text: "Body", html: "<p>Body</p>" });
+  assert.equal(calls[0]!.url, "https://api.resend.com/emails");
+  assert.equal((calls[0]!.init.headers as Record<string, string>).Authorization, "Bearer re_secret");
+  const sent = JSON.parse(String(calls[0]!.init.body)) as { to: string[]; subject: string; html: string };
+  assert.deepEqual(sent.to, ["ada@example.com"]);
+  assert.equal(sent.subject, "Hi Bcc: x@example.com");
+  assert.equal(sent.html, "<p>Body</p>");
+
+  const refused = new ResendMailer({ apiKey: "re_secret", from: "a@example.com" }, (async () => new Response("{\"message\":\"ada@example.com\"}", { status: 422 })) as typeof fetch);
+  await assert.rejects(refused.send({ to: "ada@example.com", subject: "s", text: "t" }), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.equal(error.message, "Resend refused the message with status 422");
+    return true;
+  });
 });
