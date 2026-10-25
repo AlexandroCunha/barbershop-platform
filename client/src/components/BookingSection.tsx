@@ -161,7 +161,8 @@ export function BookingSection({
   }
 
   return (
-    <section id="book" className="block" data-reveal aria-labelledby="book-title">
+    // No data-reveal here: the section is mounted again after "book another", and the reveal runs only once at load.
+    <section id="book" className="block" aria-labelledby="book-title">
       <div className="container">
         <header className="section-head">
           <p className="eyebrow">Booking</p>
