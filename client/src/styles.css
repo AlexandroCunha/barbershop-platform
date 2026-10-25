@@ -430,13 +430,28 @@ textarea {
 /* ==========================================================================
    Barbers
    ========================================================================== */
-.barber-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 40px 24px;
+/* A row of barber cards the visitor scrolls sideways, one card at a time. */
+.barber-carousel {
+  display: flex;
+  gap: 24px;
   margin: 0;
-  padding: 0;
+  padding: 0 0 8px;
   list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.barber-carousel > li {
+  flex: 0 0 min(280px, 78%);
+  scroll-snap-align: start;
+}
+
+.barber-carousel-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
 }
 
 .barber-photo {
@@ -1300,11 +1315,6 @@ textarea {
 
   .header-cta {
     display: none;
-  }
-
-  .barber-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 36px 20px;
   }
 
   .barber-initial {

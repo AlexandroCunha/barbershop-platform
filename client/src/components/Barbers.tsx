@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { mediaSrc } from "../media";
 import { useTenant } from "../tenant-context";
 import type { Professional } from "../types";
@@ -13,6 +14,13 @@ interface Props {
 /** The barbers. Tapping one starts the booking with that barber. */
 export function Barbers({ professionals, selectedId, loading, error, onChoose }: Props) {
   const { slug } = useTenant();
+  const track = useRef<HTMLUListElement>(null);
+
+  // One step moves the row by most of a screen, so the next card comes into view without losing the last one.
+  function scrollRow(direction: 1 | -1) {
+    track.current?.scrollBy({ left: direction * (track.current.clientWidth * 0.8), behavior: "smooth" });
+  }
+
   return (
     <div>
       <header className="section-head">
@@ -29,37 +37,47 @@ export function Barbers({ professionals, selectedId, loading, error, onChoose }:
       )}
 
       {professionals && (
-        <ul className="barber-grid">
-          {professionals.map((person) => {
-            const isSelected = selectedId === person.id;
-            return (
-              <li key={person.id} className={`barber${isSelected ? " is-selected" : ""}`}>
-                <button
-                  type="button"
-                  className="barber-photo"
-                  aria-pressed={isSelected}
-                  aria-label={`Book with ${person.name}`}
-                  onClick={() => onChoose(person.id)}
-                >
-                  {person.photo ? (
-                    <img src={mediaSrc(slug, person.photo)} alt="" />
-                  ) : (
-                    <span className="barber-initial" aria-hidden="true">
-                      {person.name.charAt(0)}
-                    </span>
-                  )}
-                  <span className="barber-badge">{isSelected ? "Selected" : "Book"}</span>
-                </button>
+        <>
+          <ul className="barber-carousel" ref={track} aria-label="Barbers">
+            {professionals.map((person) => {
+              const isSelected = selectedId === person.id;
+              return (
+                <li key={person.id} className={`barber${isSelected ? " is-selected" : ""}`}>
+                  <button
+                    type="button"
+                    className="barber-photo"
+                    aria-pressed={isSelected}
+                    aria-label={`Book with ${person.name}`}
+                    onClick={() => onChoose(person.id)}
+                  >
+                    {person.photo ? (
+                      <img src={mediaSrc(slug, person.photo)} alt="" />
+                    ) : (
+                      <span className="barber-initial" aria-hidden="true">
+                        {person.name.charAt(0)}
+                      </span>
+                    )}
+                    <span className="barber-badge">{isSelected ? "Selected" : "Book"}</span>
+                  </button>
 
-                <h3>{person.name}</h3>
-                {person.specialties.length > 0 && (
-                  <p className="barber-specialties">{person.specialties.join(" · ")}</p>
-                )}
-                {person.bio && <p className="barber-bio">{person.bio}</p>}
-              </li>
-            );
-          })}
-        </ul>
+                  <h3>{person.name}</h3>
+                  {person.specialties.length > 0 && (
+                    <p className="barber-specialties">{person.specialties.join(" · ")}</p>
+                  )}
+                  {person.bio && <p className="barber-bio">{person.bio}</p>}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="barber-carousel-controls">
+            <button type="button" className="btn btn-ghost" aria-label="Show the previous barber" onClick={() => scrollRow(-1)}>
+              ←
+            </button>
+            <button type="button" className="btn btn-ghost" aria-label="Show the next barber" onClick={() => scrollRow(1)}>
+              →
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
