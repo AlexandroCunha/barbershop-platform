@@ -4,6 +4,7 @@ import { useTenant } from "../tenant-context";
 import type { MediaItem, Professional } from "../types";
 import { Field, Notice, errorText } from "./ui";
 import { ScheduleEditor } from "../components/ScheduleEditor";
+import { BarberContactCard } from "./BarberContactCard";
 import { BarberLoginCard } from "./BarberLoginCard";
 import { NewBarberForm } from "./NewBarberForm";
 
@@ -40,6 +41,7 @@ export function TeamPanel() {
             }
             onRemoved={(id) => setPeople((current) => current?.filter((item) => item.id !== id) ?? null)}
           />
+          <BarberContactCard person={person} />
           <BarberLoginCard person={person} />
           <ScheduleEditor professionalId={person.id} name={person.name} />
         </Fragment>

@@ -1,10 +1,13 @@
 import { issueManageToken } from "../auth/manage-token.js";
 import {
   barberBookingMail,
+  barberCancellationMail,
+  barberMovedMail,
   cancellationMail,
   confirmationMail,
   movedMail,
   reminderMail,
+  type BarberMailDetails,
   type BookingMailDetails,
   type MailContent,
 } from "../domain/booking-mail.js";
@@ -17,6 +20,11 @@ import { instantOf } from "../utils/zoned-time.js";
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** How long a customer's link to their booking keeps working. */
 const MANAGE_LINK_DAYS = 120;
+
+const durationText = (minutes: number): string => `${minutes} min`;
+
+const priceText = (cents: number, currency: string): string =>
+  new Intl.NumberFormat("en-IE", { style: "currency", currency }).format(cents / 100);
 
 /** What the e-mails say about one booking. */
 export interface BookingFacts {
@@ -61,51 +69,56 @@ export class BookingMessages {
   created(facts: BookingFacts, bookingId: string, barberEmail: string | null): NotificationDraft[] {
     if (!this.config.enabled) return [];
     const now = this.clock.now();
-    const drafts = [
+    return [
       this.draft("confirmation", facts, confirmationMail(this.details(facts, bookingId)), now),
       ...this.reminderIfAhead(facts, bookingId),
+      ...this.barberNote("barber-booking", barberEmail, barberBookingMail(this.barberDetails(facts)), now),
     ];
-    if (barberEmail) {
-      const note = barberBookingMail(this.barberDetails(facts));
-      drafts.push({
-        kind: "barber-booking",
-        toAddress: barberEmail,
-        subject: note.subject,
-        body: note.text,
-        html: note.html,
-        sendAt: now,
-      });
-    }
-    return drafts;
   }
 
-  private barberDetails(facts: BookingFacts) {
+  /** The barber hears about a cancellation in their chair. The summary is the one the booking had. */
+  cancelled(facts: BookingFacts, bookingId: string, barberEmail: string | null): NotificationDraft[] {
+    if (!this.config.enabled) return [];
+    const now = this.clock.now();
+    return [
+      this.draft("cancellation", facts, cancellationMail(this.details(facts, bookingId)), now),
+      ...this.barberNote("barber-cancellation", barberEmail, barberCancellationMail(this.barberDetails(facts)), now),
+    ];
+  }
+
+  /** A move tells the customer and the barber, and brings the reminder to the new time. */
+  moved(facts: BookingFacts, bookingId: string, barberEmail: string | null): NotificationDraft[] {
+    if (!this.config.enabled) return [];
+    const now = this.clock.now();
+    return [
+      this.draft("moved", facts, movedMail(this.details(facts, bookingId)), now),
+      ...this.reminderIfAhead(facts, bookingId),
+      ...this.barberNote("barber-moved", barberEmail, barberMovedMail(this.barberDetails(facts)), now),
+    ];
+  }
+
+  private barberNote(kind: NotificationKind, toAddress: string | null, content: MailContent, sendAt: Date): NotificationDraft[] {
+    if (!toAddress) return [];
+    return [{ kind, toAddress, subject: content.subject, body: content.text, html: content.html, sendAt }];
+  }
+
+  /** The barber's note carries the same summary the customer sees, plus the customer's contact details. */
+  private barberDetails(facts: BookingFacts): BarberMailDetails {
+    const { business } = facts.tenant;
     return {
-      shopName: facts.tenant.business.name,
+      shopName: business.name,
       barberName: facts.barberName,
       serviceName: facts.serviceName,
       date: facts.date,
       startTime: minutesToTime(facts.startMinute),
       endTime: minutesToTime(facts.endMinute),
+      durationText: durationText(facts.endMinute - facts.startMinute),
+      priceText: priceText(facts.priceCents, business.currency),
       customerName: facts.customerName,
       customerEmail: facts.customerEmail,
       customerPhone: facts.customerPhone,
       agendaUrl: `${this.config.publicUrl}/${facts.tenant.slug}/barber`,
     };
-  }
-
-  cancelled(facts: BookingFacts, bookingId: string): NotificationDraft[] {
-    if (!this.config.enabled) return [];
-    return [this.draft("cancellation", facts, cancellationMail(this.details(facts, bookingId)), this.clock.now())];
-  }
-
-  /** A move tells the customer, and brings the reminder to the new time. */
-  moved(facts: BookingFacts, bookingId: string): NotificationDraft[] {
-    if (!this.config.enabled) return [];
-    return [
-      this.draft("moved", facts, movedMail(this.details(facts, bookingId)), this.clock.now()),
-      ...this.reminderIfAhead(facts, bookingId),
-    ];
   }
 
   private reminderIfAhead(facts: BookingFacts, bookingId: string): NotificationDraft[] {
@@ -126,7 +139,6 @@ export class BookingMessages {
     const token = issueManageToken(this.config.secret, { tenantId: tenant.id, bookingId }, expiresAt);
 
     const { business } = tenant;
-    const minutes = facts.endMinute - facts.startMinute;
     return {
       shopName: business.name,
       shopAddress: [business.address.street, business.address.city, business.address.postcode, business.address.country]
@@ -140,8 +152,8 @@ export class BookingMessages {
       date: facts.date,
       startTime: minutesToTime(facts.startMinute),
       endTime: minutesToTime(facts.endMinute),
-      durationText: `${minutes} min`,
-      priceText: new Intl.NumberFormat("en-IE", { style: "currency", currency: business.currency }).format(facts.priceCents / 100),
+      durationText: durationText(facts.endMinute - facts.startMinute),
+      priceText: priceText(facts.priceCents, business.currency),
       customerName: facts.customerName,
       manageUrl: `${shopUrl}/reserva?token=${token}`,
       shopUrl,

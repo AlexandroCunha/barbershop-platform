@@ -167,7 +167,10 @@ export function movedMail(d: BookingMailDetails): MailContent {
   };
 }
 
-/** What a barber's new-booking e-mail says. Contact details are for the barber to reach the customer. */
+/**
+ * What a barber's new-booking e-mail says: the same summary the customer is shown, plus the customer's
+ * contact details so the barber can reach them.
+ */
 export interface BarberMailDetails {
   shopName: string;
   barberName: string;
@@ -175,6 +178,8 @@ export interface BarberMailDetails {
   date: string;
   startTime: string;
   endTime: string;
+  durationText: string;
+  priceText: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -183,17 +188,52 @@ export interface BarberMailDetails {
 }
 
 export function barberBookingMail(d: BarberMailDetails): MailContent {
-  const when = whenText(d.date, d.startTime, d.endTime);
-  return {
+  return barberNote(d, {
     subject: `New booking: ${d.customerName}, ${shortDay(d.date)} at ${d.startTime}`,
+    heading: "You have a new booking.",
+    sentence: "A new appointment has been booked in your chair.",
+  });
+}
+
+export function barberCancellationMail(d: BarberMailDetails): MailContent {
+  return barberNote(d, {
+    subject: `Cancelled: ${d.customerName}, ${shortDay(d.date)} at ${d.startTime}`,
+    heading: "A booking was cancelled.",
+    sentence: "An appointment in your chair has been cancelled. The time is free again.",
+  });
+}
+
+export function barberMovedMail(d: BarberMailDetails): MailContent {
+  return barberNote(d, {
+    subject: `Moved: ${d.customerName}, now ${shortDay(d.date)} at ${d.startTime}`,
+    heading: "A booking has moved.",
+    sentence: "An appointment in your chair has moved. The new time is below.",
+  });
+}
+
+/** The wording that differs between the barber's notes. The summary and the layout are shared. */
+interface BarberNoteWording {
+  subject: string;
+  heading: string;
+  sentence: string;
+}
+
+function barberNote(d: BarberMailDetails, wording: BarberNoteWording): MailContent {
+  const when = whenText(d.date, d.startTime, d.endTime);
+  const first = d.barberName.split(" ")[0];
+  return {
+    subject: wording.subject,
     text: [
-      `Hello ${d.barberName.split(" ")[0]},`,
+      `Hello ${first},`,
       "",
-      `You have a new booking at ${d.shopName}.`,
+      wording.sentence,
       "",
-      `Customer: ${d.customerName}`,
       `Service: ${d.serviceName}`,
       `When: ${when}`,
+      `Duration: ${d.durationText}`,
+      `Total: ${d.priceText}`,
+      "",
+      `Customer: ${d.customerName}`,
       `Email: ${d.customerEmail}`,
       `Phone: ${d.customerPhone}`,
       "",
@@ -202,12 +242,14 @@ export function barberBookingMail(d: BarberMailDetails): MailContent {
     html: renderEmail({
       shopName: d.shopName,
       preheader: `${d.customerName}, ${when}.`,
-      heading: "You have a new booking.",
-      paragraphs: [`Hello ${d.barberName.split(" ")[0]}, a new appointment has been booked in your chair.`],
+      heading: wording.heading,
+      paragraphs: [`Hello ${first}, ${wording.sentence}`],
       details: [
-        { label: "Customer", value: d.customerName },
         { label: "Service", value: d.serviceName },
         { label: "When", value: when },
+        { label: "Duration", value: d.durationText },
+        { label: "Total", value: d.priceText },
+        { label: "Customer", value: d.customerName },
         { label: "Email", value: d.customerEmail },
         { label: "Phone", value: d.customerPhone },
       ],

@@ -158,8 +158,8 @@ export class BookingService {
       customerPhone: request.customerPhone,
       priceCents: service.priceCents,
     };
-    // The barber hears about the booking at the address of their own login, when they have one.
-    const barberEmail = (await this.barberAccounts.findByProfessional(tenant.id, professional.id))?.email ?? null;
+    // The barber hears about the booking at their contact address, or at their login's address when no contact is set.
+    const barberEmail = await this.barberNoticeAddress(tenant, professional.id);
 
     // Two customers can still race for the same chair; the database's no-overlap rule refuses the second.
     return this.bookings.create(
@@ -176,6 +176,13 @@ export class BookingService {
       },
       (id) => this.messages.created(facts, id, barberEmail),
     );
+  }
+
+  /** Where a barber's booking note goes: their contact address, else their login's address, else nowhere. */
+  async barberNoticeAddress(tenant: Tenant, professionalId: number): Promise<string | null> {
+    const contact = await this.professionals.findContactEmail(tenant.id, professionalId);
+    if (contact) return contact;
+    return (await this.barberAccounts.findByProfessional(tenant.id, professionalId))?.email ?? null;
   }
 
   /** Checks that the shop takes bookings now, and that the date is not in the past. */

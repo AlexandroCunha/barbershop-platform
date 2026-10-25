@@ -140,6 +140,10 @@ export interface ProfessionalRepository {
   archive(tenantId: number, id: number): Promise<boolean>;
   create(tenantId: number, input: NewProfessional): Promise<Professional>;
   update(tenantId: number, id: number, patch: ProfessionalPatch): Promise<Professional | null>;
+  /** Where the barber hears about new bookings. Empty when none is set. Never shown to customers. */
+  findContactEmail(tenantId: number, id: number): Promise<string>;
+  /** Sets or clears (empty) the barber's booking e-mail. Returns false when the barber does not exist. */
+  setContactEmail(tenantId: number, id: number, email: string): Promise<boolean>;
 }
 
 /** The working hours each barber has set for themselves. */
@@ -155,7 +159,14 @@ export interface BookingRecord extends Booking {
   cancelledAt: Date | null;
 }
 
-export type NotificationKind = "confirmation" | "reminder" | "cancellation" | "moved" | "barber-booking";
+export type NotificationKind =
+  | "confirmation"
+  | "reminder"
+  | "cancellation"
+  | "moved"
+  | "barber-booking"
+  | "barber-cancellation"
+  | "barber-moved";
 
 /** An e-mail about a booking. It is written to the outbox in the same transaction as the change it reports. */
 export interface NotificationDraft {

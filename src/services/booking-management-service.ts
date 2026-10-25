@@ -71,12 +71,13 @@ export class BookingManagementService {
       startMinute: booking.startMinute,
       endMinute: booking.endMinute,
     });
+    const barberEmail = await this.slots.barberNoticeAddress(tenant, booking.professionalId);
 
     const cancelled = await this.bookings.cancel(
       tenant.id,
       booking.id,
       this.clock.now(),
-      this.messages.cancelled(facts, booking.id),
+      this.messages.cancelled(facts, booking.id, barberEmail),
     );
     if (!cancelled) {
       throw new AppError(409, "This booking was already cancelled");
@@ -97,11 +98,12 @@ export class BookingManagementService {
       startMinute: change.startMinute,
       endMinute,
     });
+    const barberEmail = await this.slots.barberNoticeAddress(tenant, booking.professionalId);
     const moved = await this.bookings.move(
       tenant.id,
       booking.id,
       { date: change.date, startMinute: change.startMinute, endMinute },
-      this.messages.moved(facts, booking.id),
+      this.messages.moved(facts, booking.id, barberEmail),
     );
     if (!moved) {
       throw new AppError(409, "This booking can no longer be moved");

@@ -68,15 +68,15 @@ test("no reminder is queued when the booking is less than a day away", () => {
 });
 
 test("a cancellation and a move each queue one message, and a move brings the reminder along", () => {
-  assert.deepEqual(messages().cancelled(facts, BOOKING).map((draft) => draft.kind), ["cancellation"]);
-  assert.deepEqual(messages().moved(facts, BOOKING).map((draft) => draft.kind), ["moved", "reminder"]);
+  assert.deepEqual(messages().cancelled(facts, BOOKING, null).map((draft) => draft.kind), ["cancellation"]);
+  assert.deepEqual(messages().moved(facts, BOOKING, null).map((draft) => draft.kind), ["moved", "reminder"]);
 });
 
 test("nothing is queued when mail is off", () => {
   const off = messages(false);
   assert.deepEqual(off.created(facts, BOOKING, null), []);
-  assert.deepEqual(off.cancelled(facts, BOOKING), []);
-  assert.deepEqual(off.moved(facts, BOOKING), []);
+  assert.deepEqual(off.cancelled(facts, BOOKING, "daniel@example.com"), []);
+  assert.deepEqual(off.moved(facts, BOOKING, "daniel@example.com"), []);
 });
 
 test("a barber with a login hears about each new booking, with the customer's contact details", () => {
@@ -94,4 +94,22 @@ test("a barber with a login hears about each new booking, with the customer's co
 
 test("a barber without a login is not e-mailed about the booking", () => {
   assert.ok(!messages().created(facts, BOOKING, null).some((draft) => draft.kind === "barber-booking"));
+});
+
+test("a barber is told when a booking in their chair is cancelled or moved, with the same summary", () => {
+  const cancelled = messages().cancelled(facts, BOOKING, "daniel@example.com").find((draft) => draft.kind === "barber-cancellation");
+  const moved = messages().moved(facts, BOOKING, "daniel@example.com").find((draft) => draft.kind === "barber-moved");
+
+  assert.equal(cancelled?.toAddress, "daniel@example.com");
+  assert.match(cancelled?.subject ?? "", /^Cancelled: Ada Lovelace/);
+  assert.match(cancelled?.body ?? "", /Email: ada@example\.com/);
+  assert.match(cancelled?.body ?? "", /Total: /);
+  assert.equal(moved?.toAddress, "daniel@example.com");
+  assert.match(moved?.subject ?? "", /^Moved: Ada Lovelace/);
+  assert.match(moved?.body ?? "", /Duration: /);
+});
+
+test("a barber without a contact address or login is not told about a cancellation or move", () => {
+  assert.ok(!messages().cancelled(facts, BOOKING, null).some((draft) => draft.kind === "barber-cancellation"));
+  assert.ok(!messages().moved(facts, BOOKING, null).some((draft) => draft.kind === "barber-moved"));
 });

@@ -89,4 +89,20 @@ export class PgProfessionalRepository implements ProfessionalRepository {
     );
     return (result.rowCount ?? 0) > 0;
   }
+
+  async findContactEmail(tenantId: number, id: number): Promise<string> {
+    const { rows } = await this.db.query<{ contact_email: string }>(
+      "SELECT contact_email FROM professionals WHERE tenant_id = $1 AND id = $2 AND archived_at IS NULL",
+      [tenantId, id],
+    );
+    return rows[0]?.contact_email ?? "";
+  }
+
+  async setContactEmail(tenantId: number, id: number, email: string): Promise<boolean> {
+    const result = await this.db.query(
+      "UPDATE professionals SET contact_email = $3 WHERE tenant_id = $1 AND id = $2 AND archived_at IS NULL",
+      [tenantId, id, email],
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
 }

@@ -136,6 +136,18 @@ export class BarberService {
     return { email: account.email };
   }
 
+  /** The address where this barber hears about new bookings. Empty when none is set. */
+  async getContactEmail(tenant: Tenant, professionalId: number): Promise<{ email: string }> {
+    await this.requireProfessional(tenant, professionalId);
+    return { email: await this.professionals.findContactEmail(tenant.id, professionalId) };
+  }
+
+  async saveContactEmail(tenant: Tenant, professionalId: number, email: string): Promise<{ email: string }> {
+    await this.requireProfessional(tenant, professionalId);
+    await this.professionals.setContactEmail(tenant.id, professionalId, email);
+    return { email };
+  }
+
   /** The owner removes a barber's login. The barber's sessions end with it. */
   async removeLogin(tenant: Tenant, professionalId: number): Promise<void> {
     const professional = await this.requireProfessional(tenant, professionalId);

@@ -87,6 +87,9 @@ export function createApiRouter(deps: ApiDependencies): Router {
   owner.delete("/professionals/:id/login", deps.barber.removeLogin);
   owner.get("/professionals/:id/hours", deps.barber.ownerHours);
   owner.put("/professionals/:id/hours", deps.barber.saveOwnerHours);
+  // Where a barber hears about new bookings. Owner only, never part of the public barber list.
+  owner.get("/professionals/:id/contact", deps.barber.ownerContact);
+  owner.put("/professionals/:id/contact", deps.barber.saveOwnerContact);
   shop.use("/owner", owner);
 
   // A barber's own area: sign-in, sign-out, and only their upcoming bookings.

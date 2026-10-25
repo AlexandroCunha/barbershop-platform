@@ -192,6 +192,13 @@ export function tenantApi(slug: string) {
 
       saveBarberHours: (professionalId: number, days: Record<Day, DayHours | null>) =>
         ownerSend<BarberHours>(`${owner}/professionals/${professionalId}/hours`, json("PUT", days), "hours"),
+
+      /** The address where a barber hears about each new booking. Empty when none is set. */
+      barberContact: (professionalId: number) =>
+        ownerSend<{ email: string }>(`${owner}/professionals/${professionalId}/contact`, undefined, "contact"),
+
+      saveBarberContact: (professionalId: number, email: string) =>
+        ownerSend<{ email: string }>(`${owner}/professionals/${professionalId}/contact`, json("PUT", { email }), "contact"),
     },
   };
 }

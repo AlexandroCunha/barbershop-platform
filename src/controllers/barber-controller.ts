@@ -10,7 +10,7 @@ import type { Clock } from "../utils/clock.js";
 import { buildCookie, parseCookies } from "../utils/cookies.js";
 import { parseProfessionalId } from "../validations/admin.js";
 import { parseBookingId, parseSlotChange } from "../validations/booking.js";
-import { parseBarberCredentials, parseBarberLogin } from "../validations/barber.js";
+import { parseBarberCredentials, parseBarberLogin, parseContactEmail } from "../validations/barber.js";
 
 interface BarberControllerOptions {
   barbers: BarberService;
@@ -128,6 +128,17 @@ export class BarberController {
   saveOwnerHours = async (req: Request, res: Response): Promise<void> => {
     const id = parseProfessionalId(String(req.params.id));
     res.json(await this.barbers.saveHours(tenantOf(req), id, req.body));
+  };
+
+  /** The owner sees the address where a barber hears about new bookings. */
+  ownerContact = async (req: Request, res: Response): Promise<void> => {
+    res.json(await this.barbers.getContactEmail(tenantOf(req), parseProfessionalId(String(req.params.id))));
+  };
+
+  /** The owner sets or clears that address. */
+  saveOwnerContact = async (req: Request, res: Response): Promise<void> => {
+    const id = parseProfessionalId(String(req.params.id));
+    res.json(await this.barbers.saveContactEmail(tenantOf(req), id, parseContactEmail(req.body)));
   };
 
   /** The owner creates or replaces a barber's login. */

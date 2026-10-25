@@ -21,6 +21,15 @@ function parseBarberEmail(value: unknown): string {
   return email;
 }
 
+/** The address where a barber hears about new bookings. An empty value removes it. */
+export function parseContactEmail(body: unknown): string {
+  const input = requireObject(body);
+  if (input.email === "" || input.email === null) {
+    return "";
+  }
+  return parseBarberEmail(input.email);
+}
+
 /** A barber's sign-in: an email and a password, with the password's presence checked here. */
 export function parseBarberLogin(body: unknown): { email: string; password: string } {
   const input = requireObject(body);

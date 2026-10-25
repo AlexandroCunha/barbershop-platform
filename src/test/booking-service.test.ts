@@ -92,6 +92,22 @@ class InMemoryProfessionals implements ProfessionalRepository {
   async update(): Promise<Professional | null> {
     throw new Error("not used by these tests");
   }
+
+  private readonly contacts = new Map<string, string>();
+
+  /** Test setup: the barber's booking e-mail, as the owner would set it. */
+  setContact(tenantId: number, id: number, email: string): void {
+    this.contacts.set(`${tenantId}:${id}`, email);
+  }
+
+  async findContactEmail(tenantId: number, id: number): Promise<string> {
+    return this.contacts.get(`${tenantId}:${id}`) ?? "";
+  }
+
+  async setContactEmail(tenantId: number, id: number, email: string): Promise<boolean> {
+    this.setContact(tenantId, id, email);
+    return true;
+  }
 }
 
 /** Records the messages each change asked to queue, so tests can check them. */
@@ -172,7 +188,7 @@ async function offered(service: BookingService, date: string, professionalId?: n
   return barbers.flatMap((barber) => barber.times);
 }
 
-function setup() {
+function setup(loginEmail: string | null = null) {
   const bookings = new InMemoryBookings();
   const messages = new BookingMessages({ secret: TEST_SECRET, publicUrl: "https://shop.test", enabled: true }, clock);
   const services = new InMemoryServices([
@@ -191,7 +207,7 @@ function setup() {
     clock,
     { findByProfessional: async () => null, replace: async () => undefined },
     messages,
-    { findByProfessional: async () => null } as never,
+    { findByProfessional: async () => (loginEmail ? { email: loginEmail } : null) } as never,
   );
   const management = new BookingManagementService(bookings, services, professionals, service, messages, clock);
   return { service, bookings, messages, management, services, professionals };
@@ -351,6 +367,32 @@ test("a booking queues its confirmation and reminder in the same step as the boo
   assert.deepEqual(bookings.queued.map((draft) => draft.kind), ["confirmation", "reminder"]);
 });
 
+test("the barber's booking e-mail goes to their contact address, with the customer's summary", async () => {
+  const { service, bookings, professionals } = setup("login@shop.test");
+  professionals.setContact(shop.id, daniel.id, "chair@shop.test");
+  await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  const note = bookings.queued.find((draft) => draft.kind === "barber-booking");
+  assert.equal(note?.toAddress, "chair@shop.test", "the contact address is used before the login's");
+  assert.match(note?.body ?? "", /Duration: 30 min/);
+  assert.match(note?.body ?? "", /Total: /);
+  assert.match(note?.body ?? "", /Email: ada@example\.com/);
+});
+
+test("without a contact address, the barber's booking e-mail goes to their login", async () => {
+  const { service, bookings } = setup("login@shop.test");
+  await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  assert.equal(bookings.queued.find((draft) => draft.kind === "barber-booking")?.toAddress, "login@shop.test");
+});
+
+test("a barber with neither a contact address nor a login is not e-mailed about the booking", async () => {
+  const { service, bookings } = setup();
+  await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  assert.ok(!bookings.queued.some((draft) => draft.kind === "barber-booking"));
+});
+
 test("cancelling frees the time for the next customer and queues a cancellation", async () => {
   const { service, bookings, management } = setup();
   const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
@@ -440,4 +482,15 @@ test("a time that has already passed today cannot be booked", async () => {
   );
   assert.ok(!(await offered(service, TODAY)).includes("09:00"));
   assert.ok((await offered(service, TODAY)).includes("10:00"));
+});
+
+test("the barber is told when a booking in their chair is cancelled, and when it is moved", async () => {
+  const { service, bookings, management } = setup("login@shop.test");
+  const booked = await service.book(shop, { serviceId: classicHaircut.id, professionalId: daniel.id, date: MONDAY, startMinute: 9 * 60, ...customer });
+
+  await management.move(shop, booked.id, { kind: "customer" }, { date: MONDAY, startMinute: 11 * 60 });
+  assert.equal(bookings.queued.find((draft) => draft.kind === "barber-moved")?.toAddress, "login@shop.test");
+
+  await management.cancel(shop, booked.id, { kind: "owner" });
+  assert.equal(bookings.queued.find((draft) => draft.kind === "barber-cancellation")?.toAddress, "login@shop.test");
 });
