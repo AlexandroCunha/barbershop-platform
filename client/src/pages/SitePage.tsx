@@ -5,9 +5,9 @@ import { BookingSection } from "../components/BookingSection";
 import { Footer } from "../components/Footer";
 import { Header } from "../components/Header";
 import { Hero } from "../components/Hero";
-import { Services } from "../components/Services";
 import { Ticker } from "../components/Ticker";
 import { Visit } from "../components/Visit";
+import { STEP_BARBER, STEP_SERVICE } from "../components/booking/steps";
 import { useAsync } from "../hooks";
 import { useTenant } from "../tenant-context";
 
@@ -17,9 +17,16 @@ export function SitePage() {
   const services = useAsync(() => api.services(), [api]);
   const professionals = useAsync(() => api.professionals(), [api]);
 
-  // Choices made in the Services and Barbers sections carry into the booking flow.
+  // The booking flow's choices and its current step live here, so a barber tapped above starts the flow.
+  const [step, setStep] = useState(STEP_BARBER);
   const [serviceId, setServiceId] = useState<number | undefined>();
   const [professionalId, setProfessionalId] = useState<number | undefined>();
+
+  function bookWith(id: number) {
+    setProfessionalId(id);
+    setStep(STEP_SERVICE);
+    document.getElementById("book")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   // Sections fade in as they reach the viewport. Reduced-motion users see them at once.
   useEffect(() => {
@@ -59,21 +66,13 @@ export function SitePage() {
         <Ticker items={services.data?.map((service) => service.name) ?? []} />
 
         <section id="barbers" className="block block-tinted" data-reveal aria-labelledby="barbers-title">
-          <div className="container showcase">
+          <div className="container">
             <Barbers
               selectedId={professionalId}
               professionals={professionals.data}
               loading={professionals.loading}
               error={professionals.error}
-              onChoose={setProfessionalId}
-            />
-
-            <Services
-              selectedId={serviceId}
-              services={services.data}
-              loading={services.loading}
-              error={services.error}
-              onChoose={setServiceId}
+              onChoose={bookWith}
             />
           </div>
         </section>
@@ -82,8 +81,10 @@ export function SitePage() {
           services={services.data}
           professionals={professionals.data}
           loadError={services.error ?? professionals.error}
+          step={step}
           serviceId={serviceId}
           professionalId={professionalId}
+          onStepChange={setStep}
           onServiceChange={setServiceId}
           onProfessionalChange={setProfessionalId}
         />

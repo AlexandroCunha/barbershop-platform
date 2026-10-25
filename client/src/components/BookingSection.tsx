@@ -5,15 +5,14 @@ import { todayIn } from "../format";
 import { useAsync } from "../hooks";
 import { useTenant } from "../tenant-context";
 import type { Availability, Confirmation, Professional, Service } from "../types";
+import { BarberStep } from "./booking/BarberStep";
 import { BookingConfirmation } from "./booking/BookingConfirmation";
 import { BookingSummary } from "./booking/BookingSummary";
 import { DateTimeStep } from "./booking/DateTimeStep";
 import { DetailsStep } from "./booking/DetailsStep";
 import { ServiceStep } from "./booking/ServiceStep";
-import { offeredTimes } from "./booking/availability-view";
+import { STEP_BARBER, STEP_DETAILS, STEP_LABELS, STEP_SERVICE, STEP_TIME } from "./booking/steps";
 
-const STEPS = ["Service", "Date and time", "Details and confirm"] as const;
-const LAST_STEP = STEPS.length - 1;
 const NO_TIMES: Availability = { date: "", times: [], barbers: [] };
 const EMPTY_CUSTOMER: CustomerDetails = { name: "", email: "", phone: "" };
 
@@ -21,25 +20,32 @@ interface Props {
   services: Service[] | null;
   professionals: Professional[] | null;
   loadError: string | null;
+  /** Which step is showing. The page holds it, so a barber picked above can start the flow at the service. */
+  step: number;
   serviceId?: number;
   professionalId?: number;
+  onStepChange: (step: number) => void;
   onServiceChange: (id: number) => void;
   onProfessionalChange: (id: number | undefined) => void;
 }
 
-/** The booking flow: service, then date and time, then the customer's details. */
+/**
+ * The booking flow: barber, then service, then date and time, then the customer's details. Each choice
+ * moves the customer on to the next step by itself.
+ */
 export function BookingSection({
   services,
   professionals,
   loadError,
+  step,
   serviceId,
   professionalId,
+  onStepChange,
   onServiceChange,
   onProfessionalChange,
 }: Props) {
   const { api, business } = useTenant();
 
-  const [step, setStep] = useState(0);
   const [date, setDate] = useState("");
   const [time, setTime] = useState<string | undefined>();
   const [customer, setCustomer] = useState<CustomerDetails>(EMPTY_CUSTOMER);
@@ -48,7 +54,7 @@ export function BookingSection({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
-  // Every barber's times load together, so the customer can choose a barber after picking a time.
+  // Every barber's times load together; the chosen barber's own times are picked out below.
   const availability = useAsync<Availability>(
     (signal) => (serviceId && date ? api.availability(serviceId, date, undefined, signal) : Promise.resolve(NO_TIMES)),
     [api, serviceId, date],
@@ -57,28 +63,36 @@ export function BookingSection({
   const barber = professionals?.find((item) => item.id === professionalId);
   const today = todayIn(business.timeZone);
 
-  // A chosen time that the chosen barber does not have free is cleared.
+  // A time belongs to one barber and one service, so choosing either again means picking the time again.
   useEffect(() => {
-    if (time && professionalId !== undefined && !offeredTimes(availability.data, professionalId).includes(time)) {
-      setTime(undefined);
-    }
-  }, [professionalId, availability.data]);
+    setTime(undefined);
+  }, [serviceId, professionalId]);
 
   function validate(current: number): BookingErrors {
     return validateStep(current, { serviceId, professionalId, date, time, ...customer }, today);
   }
 
-  function goNext() {
-    const found = validate(step);
-    setErrors(found);
-    if (Object.keys(found).length === 0) {
-      setStep((value) => value + 1);
-    }
-  }
-
   function goBack() {
     setErrors({});
-    setStep((value) => Math.max(0, value - 1));
+    onStepChange(Math.max(STEP_BARBER, step - 1));
+  }
+
+  function chooseBarber(id: number) {
+    setErrors({});
+    onProfessionalChange(id);
+    onStepChange(STEP_SERVICE);
+  }
+
+  function chooseService(id: number) {
+    setErrors({});
+    onServiceChange(id);
+    onStepChange(STEP_TIME);
+  }
+
+  function chooseTime(slot: string) {
+    setErrors({});
+    setTime(slot);
+    onStepChange(STEP_DETAILS);
   }
 
   function changeDate(value: string) {
@@ -92,13 +106,10 @@ export function BookingSection({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Enter on an earlier step must not jump ahead; the last step checks every field before sending.
-    if (step < LAST_STEP) {
-      goNext();
-      return;
-    }
+    // Enter on an earlier step must not send the booking; only the details step does.
+    if (step !== STEP_DETAILS) return;
 
-    const found = validate(LAST_STEP);
+    const found = validate(STEP_DETAILS);
     setErrors(found);
     if (!serviceId || !professionalId || !date || !time || Object.keys(found).length > 0) return;
 
@@ -119,7 +130,7 @@ export function BookingSection({
       if (error instanceof ApiError && error.status === 409) {
         // The time went to someone else while the customer was deciding, so they pick again.
         setTime(undefined);
-        setStep(1);
+        onStepChange(STEP_TIME);
       }
       setSubmitError(refusalMessage(error));
     } finally {
@@ -130,7 +141,7 @@ export function BookingSection({
   function startAgain() {
     setConfirmation(null);
     onProfessionalChange(undefined);
-    setStep(0);
+    onStepChange(STEP_BARBER);
     setDate("");
     setTime(undefined);
     setCustomer(EMPTY_CUSTOMER);
@@ -166,7 +177,7 @@ export function BookingSection({
         <div className="booking-layout">
           <div className="booking-main">
             <ol className="stepper" aria-label="Booking progress">
-              {STEPS.map((label, index) => (
+              {STEP_LABELS.map((label, index) => (
                 <li
                   key={label}
                   aria-current={index === step ? "step" : undefined}
@@ -179,32 +190,40 @@ export function BookingSection({
             </ol>
 
             <form className="booking-form" onSubmit={handleSubmit} noValidate aria-busy={submitting}>
-              {step === 0 && (
+              {step === STEP_BARBER && (
+                <BarberStep
+                  professionals={professionals}
+                  loadError={loadError}
+                  professionalId={professionalId}
+                  error={errors.barber}
+                  onBarberChange={chooseBarber}
+                />
+              )}
+
+              {step === STEP_SERVICE && (
                 <ServiceStep
                   services={services}
                   loadError={loadError}
                   serviceId={serviceId}
                   error={errors.service}
-                  onServiceChange={onServiceChange}
+                  onServiceChange={chooseService}
                 />
               )}
 
-              {step === 1 && (
+              {step === STEP_TIME && (
                 <DateTimeStep
                   date={date}
                   time={time}
                   today={today}
-                  professionals={professionals ?? []}
-                  professionalId={professionalId}
+                  barber={barber}
                   availability={availability}
                   errors={errors}
                   onDateChange={changeDate}
-                  onTimeChange={setTime}
-                  onProfessionalChange={onProfessionalChange}
+                  onTimeChange={chooseTime}
                 />
               )}
 
-              {step === 2 && <DetailsStep customer={customer} errors={errors} onChange={changeCustomer} />}
+              {step === STEP_DETAILS && <DetailsStep customer={customer} errors={errors} onChange={changeCustomer} />}
 
               {submitError && (
                 <p className="status status-error" role="alert">
@@ -213,14 +232,10 @@ export function BookingSection({
               )}
 
               <div className="form-actions">
-                <button type="button" className="btn btn-ghost" onClick={goBack} disabled={step === 0 || submitting}>
+                <button type="button" className="btn btn-ghost" onClick={goBack} disabled={step === STEP_BARBER || submitting}>
                   Back
                 </button>
-                {step < LAST_STEP ? (
-                  <button type="button" className="btn btn-dark" onClick={goNext}>
-                    Continue
-                  </button>
-                ) : (
+                {step === STEP_DETAILS && (
                   <button type="submit" className="btn btn-dark" disabled={submitting}>
                     {submitting ? "Confirming…" : "Confirm booking"}
                   </button>

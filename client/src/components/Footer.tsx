@@ -13,7 +13,6 @@ export function Footer() {
         </div>
 
         <nav aria-label="Footer">
-          <a href="#services">Services</a>
           <a href="#barbers">Barbers</a>
           <a href="#book">Book</a>
           <a href="#visit">Visit</a>

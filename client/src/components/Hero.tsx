@@ -22,9 +22,6 @@ export function Hero() {
             <a className="btn btn-dark" href="#book">
               Book an appointment
             </a>
-            <a className="link-arrow" href="#services">
-              View services
-            </a>
           </div>
 
           <dl className="hero-facts">

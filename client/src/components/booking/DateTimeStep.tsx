@@ -1,42 +1,28 @@
 import type { AsyncState } from "../../hooks";
 import type { Availability, Professional } from "../../types";
 import type { BookingErrors } from "../../booking-validation";
-import { barbersFreeAt, offeredTimes } from "./availability-view";
+import { offeredTimes } from "./availability-view";
 import { FieldError } from "./FieldError";
 
 interface Props {
   date: string;
   time?: string;
   today: string;
-  professionals: Professional[];
-  professionalId?: number;
+  barber?: Professional;
   availability: AsyncState<Availability>;
   errors: BookingErrors;
   onDateChange: (date: string) => void;
+  /** Choosing a time moves the customer on to their details. */
   onTimeChange: (time: string) => void;
-  onProfessionalChange: (id: number) => void;
 }
 
-/** Step two: the date, the time, and the barber if the customer has not chosen one yet. */
-export function DateTimeStep({
-  date,
-  time,
-  today,
-  professionals,
-  professionalId,
-  availability,
-  errors,
-  onDateChange,
-  onTimeChange,
-  onProfessionalChange,
-}: Props) {
-  const barber = professionals.find((item) => item.id === professionalId);
-  const times = offeredTimes(availability.data, professionalId);
-  const freeBarbers = time ? barbersFreeAt(availability.data, professionals, time) : [];
+/** Step three: the date, then the time the chosen barber has free. */
+export function DateTimeStep({ date, time, today, barber, availability, errors, onDateChange, onTimeChange }: Props) {
+  const times = offeredTimes(availability.data, barber?.id);
 
   return (
     <div className="date-time">
-      <p className="muted">{barber ? `With ${barber.name}` : "Pick a time, then choose your barber."}</p>
+      {barber && <p className="muted">With {barber.name}</p>}
 
       <div className="field">
         <label htmlFor="booking-date">Date</label>
@@ -87,30 +73,6 @@ export function DateTimeStep({
         )}
         <FieldError id="err-time" message={errors.time} />
       </div>
-
-      {!barber && time && (
-        <fieldset>
-          <legend>Choose your barber for {time}</legend>
-          <div className="option-list">
-            {freeBarbers.map((person) => (
-              <label key={person.id} className={`option${professionalId === person.id ? " is-selected" : ""}`}>
-                <input
-                  type="radio"
-                  name="barber-at-time"
-                  value={person.id}
-                  checked={professionalId === person.id}
-                  onChange={() => onProfessionalChange(person.id)}
-                />
-                <span className="option-main">
-                  <span className="option-title">{person.name}</span>
-                  {person.specialties.length > 0 && <span className="muted">{person.specialties.join(" · ")}</span>}
-                </span>
-              </label>
-            ))}
-          </div>
-          <FieldError id="err-barber" message={errors.barber} />
-        </fieldset>
-      )}
     </div>
   );
 }

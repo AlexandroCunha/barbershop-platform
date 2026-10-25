@@ -22,12 +22,14 @@ export function ServiceStep({ services, loadError, serviceId, error, onServiceCh
       <div className="option-list">
         {services?.map((item) => (
           <label key={item.id} className={`option${serviceId === item.id ? " is-selected" : ""}`}>
+            {/* onClick, not onChange: a service already chosen must still move the customer on when tapped again. */}
             <input
               type="radio"
               name="service"
               value={item.id}
               checked={serviceId === item.id}
-              onChange={() => onServiceChange(item.id)}
+              readOnly
+              onClick={() => onServiceChange(item.id)}
             />
             <span className="option-main">
               <span className="option-title">{item.name}</span>

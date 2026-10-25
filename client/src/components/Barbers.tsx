@@ -7,20 +7,18 @@ interface Props {
   selectedId?: number;
   loading: boolean;
   error: string | null;
-  onChoose: (professionalId: number | undefined) => void;
+  onChoose: (professionalId: number) => void;
 }
 
-/** The barbers, shown in the main column of the barbers section. */
+/** The barbers. Tapping one starts the booking with that barber. */
 export function Barbers({ professionals, selectedId, loading, error, onChoose }: Props) {
   const { slug } = useTenant();
   return (
-    <div className="showcase-main">
+    <div>
       <header className="section-head">
         <p className="eyebrow">Barbers</p>
         <h2 id="barbers-title">Choose your barber</h2>
-        <p className="muted">
-          Tap a portrait to book with that barber, or leave none selected and choose one when you pick a time.
-        </p>
+        <p className="muted">Tap a portrait to book with that barber.</p>
       </header>
 
       {loading && <p className="status">Loading barbers…</p>}
@@ -41,7 +39,7 @@ export function Barbers({ professionals, selectedId, loading, error, onChoose }:
                   className="barber-photo"
                   aria-pressed={isSelected}
                   aria-label={`Book with ${person.name}`}
-                  onClick={() => onChoose(isSelected ? undefined : person.id)}
+                  onClick={() => onChoose(person.id)}
                 >
                   {person.photo ? (
                     <img src={mediaSrc(slug, person.photo)} alt="" />

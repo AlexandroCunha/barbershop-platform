@@ -25,7 +25,6 @@ export function Header() {
         </button>
 
         <nav id="site-nav" className={`site-nav${open ? " is-open" : ""}`} aria-label="Primary">
-          <a href="#services" onClick={close}>Services</a>
           <a href="#barbers" onClick={close}>Barbers</a>
           <a href="#visit" onClick={close}>Visit</a>
         </nav>
