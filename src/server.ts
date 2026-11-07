@@ -22,6 +22,7 @@ import { PgBookingRepository } from "./repositories/pg-booking-repository.js";
 import { PgNotificationRepository } from "./repositories/pg-notification-repository.js";
 import { PgPasswordResetRepository } from "./repositories/pg-password-reset-repository.js";
 import { PgRateLimitStore } from "./repositories/pg-rate-limit-store.js";
+import { PgRetentionRepository } from "./repositories/pg-retention-repository.js";
 import { PgOwnerRepository } from "./repositories/pg-owner-repository.js";
 import { PgProfessionalRepository } from "./repositories/pg-professional-repository.js";
 import { PgServiceRepository } from "./repositories/pg-service-repository.js";
@@ -35,11 +36,14 @@ import { BookingMessages } from "./services/booking-messages.js";
 import { BookingService } from "./services/booking-service.js";
 import { NotificationWorker } from "./services/notification-worker.js";
 import { PasswordResetService } from "./services/password-reset-service.js";
+import { RetentionService } from "./services/retention-service.js";
 import { SessionService } from "./services/session-service.js";
 import { systemClock as clock } from "./utils/clock.js";
 
 const MINUTE = 60_000;
 const WORKER_INTERVAL_MS = MINUTE;
+const RETENTION_INTERVAL_MS = 24 * 60 * MINUTE;
+const RETENTION_FIRST_RUN_MS = 5 * MINUTE;
 
 loadLocalEnv();
 const config = loadConfig();
@@ -146,6 +150,21 @@ if (mailEnabled) {
   setInterval(() => {
     worker.runOnce().catch((error: unknown) => console.error("The e-mail worker stopped a run", error));
   }, WORKER_INTERVAL_MS);
+}
+
+// Old bookings lose their customer details once the retention period has passed.
+if (config.bookingRetentionMonths > 0) {
+  const retention = new RetentionService(new PgRetentionRepository(pool), clock, config.bookingRetentionMonths);
+  const runRetention = (): void => {
+    retention
+      .run()
+      .then((changed) => {
+        if (changed > 0) console.log(`Anonymised ${changed} old booking(s).`);
+      })
+      .catch((error: unknown) => console.error("The data retention run failed", error));
+  };
+  setTimeout(runRetention, RETENTION_FIRST_RUN_MS);
+  setInterval(runRetention, RETENTION_INTERVAL_MS);
 }
 
 app.listen(config.port, () => {

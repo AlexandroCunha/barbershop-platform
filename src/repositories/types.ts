@@ -246,3 +246,9 @@ export interface PasswordResetRepository {
    */
   consume(tokenHash: string, tenantId: number, now: Date): Promise<PasswordResetTarget | null>;
 }
+
+/** Removes personal data that is no longer needed (GDPR storage limitation). */
+export interface RetentionRepository {
+  /** Blanks the customer details of bookings dated before `cutoff` (YYYY-MM-DD). Returns how many bookings changed. */
+  anonymiseBookingsBefore(cutoff: string): Promise<number>;
+}
