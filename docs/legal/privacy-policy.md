@@ -34,7 +34,7 @@ Data is accessible to the barbershop and to staff it authorises. We do not sell 
 
 ## 5. How long we keep data
 
-We keep appointment records while the barbershop uses the system and for any period required by law. When a subscription ends, data can be returned and then deleted after [period], unless a legal obligation requires us to keep it.
+The booking system removes a customer's name, e-mail address and phone number from an appointment [24] months after its date (the retention period is set by the barbershop's operator, and the appointment itself stays in the shop's records without personal details). Messages waiting to be sent are cleared at the same time. Other records are kept while the barbershop uses the system and for any period required by law. When a subscription ends, data can be returned and then deleted after [period], unless a legal obligation requires us to keep it.
 
 ## 6. Security
 

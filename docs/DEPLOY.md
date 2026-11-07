@@ -22,6 +22,7 @@ Set these variables in the server's environment, or in a `.env` file that only t
 | `TRUST_PROXY` | see below | The number of reverse proxies in front of the app. |
 | `COOKIE_SECURE` | no | Defaults to `true` in production. |
 | `BOOKING_RATE_LIMIT` | no | Booking requests per address in 10 minutes. Defaults to `30`. |
+| `BOOKING_RETENTION_MONTHS` | no | Months to keep customer details (name, e-mail, phone) after the appointment date. Older bookings are anonymised once a day. Defaults to `24`; `0` keeps everything. Must match what your privacy policy says. |
 | `HOME_SHOP_SLUG` | no | Address of the barbershop the home page opens. Defaults to the first barbershop created. |
 | `MEDIA_STORAGE` | no | `local` (default) keeps photos on this server's disk. `s3` stores them in a bucket. |
 | `S3_BUCKET`, `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | when `MEDIA_STORAGE=s3` | Bucket and credentials. The app refuses to start if one is missing. |

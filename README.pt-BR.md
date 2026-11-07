@@ -5,7 +5,7 @@
 **Agendamento online para barbearias, de forma simples.** Cada barbearia ganha o próprio endereço, um site
 bonito, uma agenda de horários e uma área do dono. Uma única instalação atende muitas barbearias.
 
-[![CI](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml)
+[![CI](https://github.com/AlexandroCunha/barbershop-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandroCunha/barbershop-platform/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)

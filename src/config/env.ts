@@ -21,6 +21,11 @@ export interface Config {
   trustProxyHops: number;
   /** Booking requests allowed per address in 10 minutes. Raise it for load tests only. */
   bookingRateLimit: number;
+  /**
+   * Months to keep a customer's name, e-mail and phone after the appointment date. Older bookings are
+   * anonymised (the booking itself stays for the shop's records). 0 keeps everything.
+   */
+  bookingRetentionMonths: number;
   /** Address of the barbershop the home page opens. Undefined means the first shop created. */
   homeShopSlug: string | undefined;
   media: MediaConfig;
@@ -67,6 +72,18 @@ function parseRateLimit(value: string | undefined, fallback: number): number {
     throw new Error("BOOKING_RATE_LIMIT must be a positive whole number");
   }
   return parsed;
+}
+
+const DEFAULT_RETENTION_MONTHS = 24;
+const MAX_RETENTION_MONTHS = 120;
+
+function parseRetentionMonths(value: string | undefined): number {
+  if (value === undefined || value.trim() === "") return DEFAULT_RETENTION_MONTHS;
+  const months = Number(value);
+  if (!Number.isInteger(months) || months < 0 || months > MAX_RETENTION_MONTHS) {
+    throw new Error(`BOOKING_RETENTION_MONTHS must be a whole number from 0 to ${MAX_RETENTION_MONTHS} (0 keeps everything)`);
+  }
+  return months;
 }
 
 const MAX_PROXY_HOPS = 5;
@@ -149,6 +166,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     production,
     trustProxyHops: parseTrustProxyHops(env.TRUST_PROXY),
     bookingRateLimit: parseRateLimit(env.BOOKING_RATE_LIMIT, 30),
+    bookingRetentionMonths: parseRetentionMonths(env.BOOKING_RETENTION_MONTHS),
     homeShopSlug: parseHomeShop(env.HOME_SHOP_SLUG),
     media: parseMedia(env),
     publicUrl: parsePublicUrl(env.PUBLIC_URL, port, production),

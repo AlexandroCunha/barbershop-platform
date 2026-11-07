@@ -53,3 +53,16 @@ test("S3 storage names every missing variable, and never prints a value", () => 
       error.message === "MEDIA_STORAGE=s3 needs these variables: S3_BUCKET, S3_SECRET_ACCESS_KEY",
   );
 });
+
+test("customer details are kept 24 months by default, and 0 turns retention off", () => {
+  assert.equal(loadConfig({ ...base }).bookingRetentionMonths, 24);
+  assert.equal(loadConfig({ ...base, BOOKING_RETENTION_MONTHS: "12" }).bookingRetentionMonths, 12);
+  assert.equal(loadConfig({ ...base, BOOKING_RETENTION_MONTHS: "0" }).bookingRetentionMonths, 0);
+});
+
+test("BOOKING_RETENTION_MONTHS must be a whole number from 0 to 120", () => {
+  assert.throws(() => loadConfig({ ...base, BOOKING_RETENTION_MONTHS: "-1" }), /BOOKING_RETENTION_MONTHS/);
+  assert.throws(() => loadConfig({ ...base, BOOKING_RETENTION_MONTHS: "1.5" }), /BOOKING_RETENTION_MONTHS/);
+  assert.throws(() => loadConfig({ ...base, BOOKING_RETENTION_MONTHS: "999" }), /BOOKING_RETENTION_MONTHS/);
+  assert.throws(() => loadConfig({ ...base, BOOKING_RETENTION_MONTHS: "soon" }), /BOOKING_RETENTION_MONTHS/);
+});

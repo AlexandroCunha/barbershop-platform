@@ -5,7 +5,7 @@
 **Online booking for barbershops, made simple.** Every shop gets its own address, a beautiful website,
 a booking calendar and an owner area. One installation serves many shops.
 
-[![CI](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandroCunha/barbearia/actions/workflows/ci.yml)
+[![CI](https://github.com/AlexandroCunha/barbershop-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexandroCunha/barbershop-platform/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
@@ -286,6 +286,7 @@ media/<shop>/               each shop's photos (not committed)
 | `COOKIE_SECURE` | | Send cookies only over HTTPS. On by default in production |
 | `TRUST_PROXY` | | Number of reverse proxies in front of the app (usually `1`). Leave it unset without a proxy. See [deploy guide](docs/DEPLOY.md) |
 | `BOOKING_RATE_LIMIT` | | Booking requests allowed per address in 10 minutes. Default `30` |
+| `BOOKING_RETENTION_MONTHS` | | Months to keep a customer's name, e-mail and phone after the appointment. Older bookings are anonymised. Default `24`; `0` keeps everything |
 
 ---
 
